@@ -1,0 +1,67 @@
+﻿# Sacc Lightweight Module Hangar 仕様整理（合意版）
+
+## 1. 目的
+- Sacc機体を `SetActive` 切替で運用し、同期負荷・描画負荷を抑える。
+- late joiner を含めて、スロット状態を全員で一致させる。
+- まずは単機種デバッグを成立させ、将来の複数機種（最大16）に拡張可能な構造を維持する。
+
+## 2. 責務分離
+- **Manager（統括）**: 状態保持・同期・全体指示（All Respawn など）。
+- **Slot**: `ApplyState` 実行（Full / LowPoly 切替、判定、ローカル表示更新）。
+
+## 3. スロット/機種設計
+- Slot は最大16（`Slot_00` ～ `Slot_15`）を想定。
+- 機種指定は運用上 **A, B, C...** を使用（内部では index 0..15 対応）。
+- `SAV_VehicleSlot` は機種参照を最大16枠分持つ前提（可変長ではなく固定上限）。
+- `VehicleCount` で有効機種範囲を制限（例: 3ならA→B→Cでループ）。
+
+## 4. 状態ルール
+- 同一Slotで同時に2機Activeは不可（切替時は必ず解除を挟む）。
+- Activeボタンはトグル動作。
+  - 非Active時: 選択機種をActive化。
+  - Active時: 条件を満たせば非Active化。
+- 非選択機体は完全非表示。
+- 単機種デバッグ時は実質2状態（Full / LowPoly）で運用。
+
+## 5. ReleaseZone（解除可否判定）
+- Slot共通の `ReleaseZone`（Collider）を使用。
+- 判定対象は **Full機体 root の Transform.position**（実運用での center 相当）。
+- 解除条件を満たさない場合は解除しない。
+- 失敗時は日本語メッセージを **3秒間、押した本人のみ** に表示。
+  - 文言: `機体が指定リスポン位置にある場合のみ 非アクティブ化や機体変更できます`
+
+## 6. Respawn方針
+- 既存の `SaccEntitySendEvent`（リスポン棒）機能を維持して使用。
+- Active化後、遅延を入れてRespawnイベント発火（30フレーム待機方針）。
+- All Respawn は「Active中の機体」を対象に発火し、細かい可否は既存処理に委譲。
+
+## 7. TMPラベル仕様
+- `SAV_SlotLabel` は **TMPと同じGameObject** に付与。
+- 表示は `Prefix + 2桁SlotId`（例: `Slot03`）。
+- Prefix と SlotId の間に区切り（アンダーバー等）は自動付与しない。
+  - 必要ならPrefix側にユーザーが記入。
+
+## 8. 初期割当テーブル
+- 保存場所は `VehicleSlotManager` 本体ではなく、**子オブジェクト `SAV_DefaultAssignments`**。
+- `SAV_DefaultAssignments` は16スロット分の初期値を保持:
+  - 機種（A..P）
+  - 初期モード（Full / LowPoly）
+- 実際の生成数（`GenerateSlotCount`）は別入力。
+  - 生成されないスロット分の初期値は適用対象外（参照されない）。
+
+## 9. Slot自動生成（Editor拡張）
+- 実行場所: `SAV_DefaultAssignments` のInspectorボタン。
+- 複製元: 常に `Slot_00`。
+- 生成先: `Slot_01` 以降（最大 `Slot_15`）。
+- 生成時オプション:
+  - 生成数（1..16）
+  - 軸（X/Z）
+  - オフセット量（可変）
+- 配置先階層: `Slot_00` と同階層（同じ親配下）。
+- 参照自動更新対象:
+  - `Manager.Slots[]`
+  - 各ボタンの `SlotId`
+- 目的は「手間ゼロで再生成可能」な制作支援。
+
+## 10. Inspector表示
+- 実行不可条件や注意喚起は、見落とし防止のため **Inspector上のHelpBox表示** を採用する。
