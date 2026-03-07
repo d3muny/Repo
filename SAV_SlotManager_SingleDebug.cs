@@ -1,8 +1,8 @@
 ﻿// SAV_SlotManager_SingleDebug.cs
 // コードの最終目的: Slot状態の同期管理を一元化し、Full/LowPoly切替とAll Respawnを制御する
-// バージョン名: ver13
-// バージョン差分: 同期不達対策として UdonSynced 変数を public 化（2人同期/LateJoin再検証用）
-// バージョン更新日: 2026-03-07 16:37
+// バージョン名: ver14
+// バージョン差分: ver11実装へロールバックし、連番を最新へ正規化
+// バージョン更新日: 2026-03-07 16:48
 
 using UdonSharp;
 using UnityEngine;
@@ -16,14 +16,17 @@ namespace SaccFlightAndVehicles
         private int _pendingSlotId = -1;
         private int _pendingNext = -1;
         private bool _pendingToggle = false;
+        private int _pendingRetryCount = 0;
+        private bool _lateJoinResyncRequested = false;
+
+        [Header("Debug")]
+        public bool EnableDebugLogs = true;
 
         [Header("Slots")]
         public SAV_VehicleSlot_SingleDebug[] Slots;
-        [Header("Debug")]
-        public bool EnableDebugLog = true;
 
         // ---- Synced state (per slot, fixed max = 16) ----
-        // -1 = inactive (LowPoly), 0 = active (Full)
+        // active: -1 = inactive (LowPoly), 0 = active (Full)
         [UdonSynced] public int s0_active = -1;
         [UdonSynced] public int s1_active = -1;
         [UdonSynced] public int s2_active = -1;
@@ -41,7 +44,7 @@ namespace SaccFlightAndVehicles
         [UdonSynced] public int s14_active = -1;
         [UdonSynced] public int s15_active = -1;
 
-        // seq increments whenever state changes (forces re-apply / respawn scheduling)
+        // seq increments whenever state changes
         [UdonSynced] public int s0_seq = 0;
         [UdonSynced] public int s1_seq = 0;
         [UdonSynced] public int s2_seq = 0;
@@ -58,22 +61,69 @@ namespace SaccFlightAndVehicles
         [UdonSynced] public int s13_seq = 0;
         [UdonSynced] public int s14_seq = 0;
         [UdonSynced] public int s15_seq = 0;
-        [UdonSynced] public int syncTick = 0;
-        [UdonSynced] public int lastWriterPlayerId = -1;
+
+        // tick is a global monotonic write id (prevents stale overwrite)
+        [UdonSynced] public int s0_tick = 0;
+        [UdonSynced] public int s1_tick = 0;
+        [UdonSynced] public int s2_tick = 0;
+        [UdonSynced] public int s3_tick = 0;
+        [UdonSynced] public int s4_tick = 0;
+        [UdonSynced] public int s5_tick = 0;
+        [UdonSynced] public int s6_tick = 0;
+        [UdonSynced] public int s7_tick = 0;
+        [UdonSynced] public int s8_tick = 0;
+        [UdonSynced] public int s9_tick = 0;
+        [UdonSynced] public int s10_tick = 0;
+        [UdonSynced] public int s11_tick = 0;
+        [UdonSynced] public int s12_tick = 0;
+        [UdonSynced] public int s13_tick = 0;
+        [UdonSynced] public int s14_tick = 0;
+        [UdonSynced] public int s15_tick = 0;
+
+        [UdonSynced] public int writeCounter = 0;
+        [UdonSynced] public int lastWriteSlot = -1;
+        [UdonSynced] public int lastWriteByPlayerId = -1;
+        [UdonSynced] public int lastWriteActive = -1;
+        [UdonSynced] public int lastWriteSeq = 0;
+        [UdonSynced] public int lastWriteTick = 0;
+        [UdonSynced] public int syncEpoch = 0;
+
+        private int _lastAppliedEpoch = int.MinValue;
 
         private void Start()
         {
+            _lastAppliedEpoch = syncEpoch;
             ApplyAll(true);
+            DLog("Start ApplyAll(force=true)");
+
+            // Late join helper: request a resync from Instance Master once.
+            if (!_lateJoinResyncRequested)
+            {
+                _lateJoinResyncRequested = true;
+                SendCustomEventDelayedSeconds(nameof(_RequestLateJoinResyncFromMaster), 1.2f);
+            }
         }
 
         public override void OnDeserialization()
         {
-            ApplyAll(false);
-            LogSyncState("OnDeserialization");
+            bool forceByEpoch = (syncEpoch != _lastAppliedEpoch);
+            _lastAppliedEpoch = syncEpoch;
+            ApplyAll(forceByEpoch);
+            DLog("OnDeserialization fromPlayerId=" + lastWriteByPlayerId + " slot=" + lastWriteSlot + " active=" + lastWriteActive + " seq=" + lastWriteSeq + " tick=" + lastWriteTick + " epoch=" + syncEpoch + " forceByEpoch=" + forceByEpoch);
+            if (lastWriteSlot >= 0 && lastWriteSlot <= 15)
+            {
+                DLog("OnDeserialization slotState " + FormatSlotState(lastWriteSlot));
+            }
+        }
+
+        // Backward compatibility for existing button wiring
+        public void ToggleActive(int slotId)
+        {
+            RequestToggleActive(slotId);
         }
 
         // UI calls this
-        public void ToggleActive(int slotId)
+        public void RequestToggleActive(int slotId)
         {
             if (!Utilities.IsValid(Networking.LocalPlayer)) { return; }
             if (slotId < 0 || slotId > 15) { return; }
@@ -86,6 +136,7 @@ namespace SaccFlightAndVehicles
                 SAV_VehicleSlot_SingleDebug slot = GetSlot(slotId);
                 if (slot != null && !slot.CanReleaseActive())
                 {
+                    DLog("RequestToggleActive blocked by CanReleaseActive slot=" + slotId);
                     return;
                 }
                 next = -1;
@@ -95,17 +146,19 @@ namespace SaccFlightAndVehicles
                 next = 0;
             }
 
+            DLog("RequestToggleActive actor=" + Networking.LocalPlayer.playerId + ":" + Networking.LocalPlayer.displayName + " slot=" + slotId + " cur=" + cur + " next=" + next + " isOwner=" + Networking.IsOwner(gameObject));
+
             // Ensure we are owner before changing synced vars
             if (!Networking.IsOwner(gameObject))
             {
                 Networking.SetOwner(Networking.LocalPlayer, gameObject);
 
-                // Defer the actual state change by 1 frame
+                // Apply after ownership is actually transferred
                 _pendingSlotId = slotId;
                 _pendingNext = next;
                 _pendingToggle = true;
-
-                SendCustomEventDelayedFrames("_DoPendingToggle", 1);
+                _pendingRetryCount = 0;
+                SendCustomEventDelayedFrames(nameof(_TryApplyPendingToggle), 1);
                 return;
             }
 
@@ -113,61 +166,141 @@ namespace SaccFlightAndVehicles
             ApplyToggle(slotId, next);
         }
 
-        public void _DoPendingToggle()
+        public override void OnOwnershipTransferred(VRCPlayerApi newOwner)
         {
-            if (!_pendingToggle) { return; }
-            _pendingToggle = false;
+            DLog("OnOwnershipTransferred newOwner=" + SafeName(newOwner) + " localIsOwner=" + Networking.IsOwner(gameObject));
+            if (Networking.IsOwner(gameObject))
+            {
+                SendCustomEventDelayedFrames(nameof(_OwnerReserializeSnapshot), 2);
+            }
+            if (_pendingToggle && Networking.IsOwner(gameObject))
+            {
+                _pendingToggle = false;
+                ApplyToggle(_pendingSlotId, _pendingNext);
+            }
+        }
 
-            // If ownership still hasn't arrived, try again next frame
+        public override void OnPlayerJoined(VRCPlayerApi player)
+        {
+            DLog("OnPlayerJoined player=" + player.playerId + ":" + SafeName(player) + " localIsOwner=" + Networking.IsOwner(gameObject));
+            if (Networking.IsOwner(gameObject))
+            {
+                // Late join path: send authoritative synced state after a short delay.
+                SendCustomEventDelayedSeconds(nameof(_OwnerLateJoinResyncDelayed), 1f);
+            }
+        }
+
+        public override void OnPlayerLeft(VRCPlayerApi player)
+        {
+            DLog("OnPlayerLeft player=" + player.playerId + ":" + SafeName(player));
+        }
+
+        // Joiner-side request path: ask instance master to refresh synchronized state.
+        public void _RequestLateJoinResyncFromMaster()
+        {
+            if (!Utilities.IsValid(Networking.LocalPlayer)) { return; }
+            if (Networking.IsOwner(gameObject)) { return; }
+
+            DLog("RequestLateJoinResyncFromMaster send");
+            SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.All, nameof(NetLateJoinResyncRequest));
+        }
+
+        // Runs on everyone. Only Instance Master responds.
+        public void NetLateJoinResyncRequest()
+        {
+            if (!Networking.IsMaster) { return; }
+
+            DLog("NetLateJoinResyncRequest received by Instance Master");
+
             if (!Networking.IsOwner(gameObject))
             {
-                _pendingToggle = true;
-                SendCustomEventDelayedFrames("_DoPendingToggle", 1);
+                Networking.SetOwner(Networking.LocalPlayer, gameObject);
+                SendCustomEventDelayedFrames(nameof(_MasterLateJoinResyncAfterOwner), 2);
                 return;
             }
 
+            _OwnerLateJoinResyncDelayed();
+        }
+
+        public void _MasterLateJoinResyncAfterOwner()
+        {
+            if (!Networking.IsMaster) { return; }
+            if (!Networking.IsOwner(gameObject)) { return; }
+            _OwnerLateJoinResyncDelayed();
+        }
+
+        public void _OwnerLateJoinResyncDelayed()
+        {
+            if (!Networking.IsOwner(gameObject)) { return; }
+
+            syncEpoch++;
+            lastWriteSlot = -1;
+            lastWriteByPlayerId = Utilities.IsValid(Networking.LocalPlayer) ? Networking.LocalPlayer.playerId : -1;
+            lastWriteActive = -3;
+            lastWriteSeq = -1;
+            lastWriteTick = writeCounter;
+
+            RequestSerialization();
+            ApplyAll(true);
+            DLog("LateJoinResyncDelayed epoch=" + syncEpoch + " writer=" + lastWriteByPlayerId);
+        }
+
+        public void _OwnerReserializeSnapshot()
+        {
+            if (!Networking.IsOwner(gameObject)) { return; }
+            ReserializeSnapshotFromVisuals();
+        }
+
+        public void _TryApplyPendingToggle()
+        {
+            if (!_pendingToggle) { return; }
+
+            if (!Networking.IsOwner(gameObject))
+            {
+                _pendingRetryCount++;
+                if (_pendingRetryCount < 180)
+                {
+                    SendCustomEventDelayedFrames(nameof(_TryApplyPendingToggle), 1);
+                }
+                else
+                {
+                    DLog("_TryApplyPendingToggle timeout slot=" + _pendingSlotId);
+                    _pendingToggle = false;
+                }
+                return;
+            }
+
+            _pendingToggle = false;
             ApplyToggle(_pendingSlotId, _pendingNext);
         }
 
         private void ApplyToggle(int slotId, int next)
         {
+            // Prevent stale owner snapshot from clearing other active slots:
+            // take current visual states as baseline before writing this slot.
+            CaptureActiveStateFromVisuals();
+
+            writeCounter++;
+
             SetActive(slotId, next);
             IncSeq(slotId);
-            syncTick++;
-            if (Utilities.IsValid(Networking.LocalPlayer))
-            {
-                lastWriterPlayerId = Networking.LocalPlayer.playerId;
-            }
+            SetTick(slotId, writeCounter);
+
+            lastWriteSlot = slotId;
+            lastWriteByPlayerId = Utilities.IsValid(Networking.LocalPlayer) ? Networking.LocalPlayer.playerId : -1;
+            lastWriteActive = next;
+            lastWriteSeq = GetSeq(slotId);
+            lastWriteTick = GetTick(slotId);
 
             RequestSerialization();
             ApplyAll(true);
+            BroadcastVisualState(slotId, next);
 
-            // Safe owner name logging (no ?. operator)
-            VRCPlayerApi owner = Networking.GetOwner(gameObject);
-            string ownerName = (owner != null) ? owner.displayName : "null";
-            Debug.Log("[SlotMgr] ApplyToggle slot=" + slotId + " next=" + next + " tick=" + syncTick + " writer=" + lastWriterPlayerId + " owner=" + ownerName);
-            LogSyncState("ApplyToggleLocal");
+            DLog("ApplyToggle slot=" + slotId + " next=" + next + " seq=" + lastWriteSeq + " tick=" + lastWriteTick + " writer=" + lastWriteByPlayerId);
+            DLog("ApplyToggle slotState " + FormatSlotState(slotId));
         }
 
-        public void AllRespawn()
-        {
-            // Anyone can press; no sync needed.
-            int count = (Slots != null) ? Slots.Length : 0;
-            for (int i = 0; i < count; i++)
-            {
-                SAV_VehicleSlot_SingleDebug slot = Slots[i];
-                if (!slot) { continue; }
-
-                // Only active slots
-                if (slot.SlotId < 0 || slot.SlotId > 15) { continue; }
-                if (GetActive(slot.SlotId) == 0)
-                {
-                    slot.TriggerRespawnNow_All();
-                }
-            }
-        }
-
-        private void ApplyAll(bool force)
+        private void CaptureActiveStateFromVisuals()
         {
             int count = (Slots != null) ? Slots.Length : 0;
             for (int i = 0; i < count; i++)
@@ -177,7 +310,93 @@ namespace SaccFlightAndVehicles
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
 
-                slot.ApplyState(GetActive(id), GetSeq(id), syncTick, force, false, false);
+                int visualActive = slot.IsVisualActive() ? 0 : -1;
+                SetActive(id, visualActive);
+            }
+        }
+
+        private void ReserializeSnapshotFromVisuals()
+        {
+            CaptureActiveStateFromVisuals();
+
+            int count = (Slots != null) ? Slots.Length : 0;
+            for (int i = 0; i < count; i++)
+            {
+                SAV_VehicleSlot_SingleDebug slot = Slots[i];
+                if (!slot) { continue; }
+                int id = slot.SlotId;
+                if (id < 0 || id > 15) { continue; }
+
+                IncSeq(id);
+                writeCounter++;
+                SetTick(id, writeCounter);
+            }
+
+            lastWriteSlot = -1;
+            lastWriteByPlayerId = Utilities.IsValid(Networking.LocalPlayer) ? Networking.LocalPlayer.playerId : -1;
+            lastWriteActive = -2;
+            lastWriteSeq = -1;
+            lastWriteTick = writeCounter;
+
+            RequestSerialization();
+            ApplyAll(true);
+            DLog("ReserializeSnapshotFromVisuals writeCounter=" + writeCounter + " epoch=" + syncEpoch);
+        }
+
+        private void BroadcastVisualState(int slotId, int next)
+        {
+            SAV_VehicleSlot_SingleDebug slot = GetSlot(slotId);
+            if (!slot) { return; }
+
+            if (next == 0)
+            {
+                slot.SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.All, "NetSetActiveVisual");
+            }
+            else
+            {
+                slot.SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.All, "NetSetInactiveVisual");
+            }
+
+            DLog("BroadcastVisualState slot=" + slotId + " next=" + next);
+        }
+
+        public void AllRespawn()
+        {
+            int count = (Slots != null) ? Slots.Length : 0;
+            for (int i = 0; i < count; i++)
+            {
+                SAV_VehicleSlot_SingleDebug slot = Slots[i];
+                if (!slot) { continue; }
+
+                if (slot.SlotId < 0 || slot.SlotId > 15) { continue; }
+                if (slot.IsVisualActive())
+                {
+                    slot.TriggerRespawnNow_All();
+                }
+            }
+
+            DLog("AllRespawn called");
+        }
+
+        private void ApplyAll(bool force)
+        {
+            int count = (Slots != null) ? Slots.Length : 0;
+            bool localIsOwner = Networking.IsOwner(gameObject);
+            for (int i = 0; i < count; i++)
+            {
+                SAV_VehicleSlot_SingleDebug slot = Slots[i];
+                if (!slot) { continue; }
+                int id = slot.SlotId;
+                if (id < 0 || id > 15) { continue; }
+
+                slot.ApplyState(
+                    GetActive(id),
+                    GetSeq(id),
+                    GetTick(id),
+                    force,
+                    localIsOwner,
+                    EnableDebugLogs
+                );
             }
         }
 
@@ -242,6 +461,30 @@ namespace SaccFlightAndVehicles
             return 0;
         }
 
+        private int GetTick(int slotId)
+        {
+            switch (slotId)
+            {
+                case 0: return s0_tick;
+                case 1: return s1_tick;
+                case 2: return s2_tick;
+                case 3: return s3_tick;
+                case 4: return s4_tick;
+                case 5: return s5_tick;
+                case 6: return s6_tick;
+                case 7: return s7_tick;
+                case 8: return s8_tick;
+                case 9: return s9_tick;
+                case 10: return s10_tick;
+                case 11: return s11_tick;
+                case 12: return s12_tick;
+                case 13: return s13_tick;
+                case 14: return s14_tick;
+                case 15: return s15_tick;
+            }
+            return 0;
+        }
+
         private void SetActive(int slotId, int value)
         {
             switch (slotId)
@@ -288,30 +531,46 @@ namespace SaccFlightAndVehicles
             }
         }
 
-        private void LogSyncState(string tag)
+        private void SetTick(int slotId, int value)
         {
-            if (!EnableDebugLog) { return; }
-
-            int localId = -1;
-            if (Utilities.IsValid(Networking.LocalPlayer))
+            switch (slotId)
             {
-                localId = Networking.LocalPlayer.playerId;
+                case 0: s0_tick = value; break;
+                case 1: s1_tick = value; break;
+                case 2: s2_tick = value; break;
+                case 3: s3_tick = value; break;
+                case 4: s4_tick = value; break;
+                case 5: s5_tick = value; break;
+                case 6: s6_tick = value; break;
+                case 7: s7_tick = value; break;
+                case 8: s8_tick = value; break;
+                case 9: s9_tick = value; break;
+                case 10: s10_tick = value; break;
+                case 11: s11_tick = value; break;
+                case 12: s12_tick = value; break;
+                case 13: s13_tick = value; break;
+                case 14: s14_tick = value; break;
+                case 15: s15_tick = value; break;
             }
+        }
 
+        private void DLog(string msg)
+        {
+            if (!EnableDebugLogs) { return; }
             VRCPlayerApi owner = Networking.GetOwner(gameObject);
-            string ownerText = (owner != null) ? (owner.displayName + "(" + owner.playerId + ")") : "null";
-            Debug.Log("[SlotMgr] " + tag + " local=" + localId + " owner=" + ownerText + " writer=" + lastWriterPlayerId + " tick=" + syncTick);
+            int localId = Utilities.IsValid(Networking.LocalPlayer) ? Networking.LocalPlayer.playerId : -1;
+            string ownerName = SafeName(owner);
+            Debug.Log("[SlotMgr] L=" + localId + " Owner=" + ownerName + " | " + msg);
+        }
 
-            int count = (Slots != null) ? Slots.Length : 0;
-            for (int i = 0; i < count; i++)
-            {
-                SAV_VehicleSlot_SingleDebug slot = Slots[i];
-                if (slot == null) { continue; }
-                int id = slot.SlotId;
-                if (id < 0 || id > 15) { continue; }
-                Debug.Log("[SlotMgr] " + tag + " slot=" + id + " active=" + GetActive(id) + " seq=" + GetSeq(id));
-            }
+        private string FormatSlotState(int slotId)
+        {
+            return "slot=" + slotId + " active=" + GetActive(slotId) + " seq=" + GetSeq(slotId) + " tick=" + GetTick(slotId);
+        }
+
+        private string SafeName(VRCPlayerApi p)
+        {
+            return (p != null) ? p.displayName : "null";
         }
     }
 }
-
