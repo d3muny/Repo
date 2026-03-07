@@ -1,8 +1,8 @@
 ﻿// SLMH_SlotManager_SingleDebug.cs
 // コードの最終目的: Slot状態の同期管理を一元化し、Full/LowPoly切替とAll Respawnを制御する
-// バージョン名: ver20
-// バージョン差分: 接頭語をSAV_からSLMH_へ統一
-// バージョン更新日: 2026-03-07 20:09
+// バージョン名: ver21
+// バージョン差分: 共通処理をSLMH_SlotManager_Baseへ分離（継承構成へ移行）
+// バージョン更新日: 2026-03-07 23:39
 
 using UdonSharp;
 using UnityEngine;
@@ -11,7 +11,7 @@ using VRC.SDKBase;
 namespace SaccFlightAndVehicles
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
-    public class SLMH_SlotManager_SingleDebug : UdonSharpBehaviour
+    public class SLMH_SlotManager_SingleDebug : SLMH_SlotManager_Base
     {
         private int _pendingSlotId = -1;
         private int _pendingNext = -1;
@@ -20,15 +20,6 @@ namespace SaccFlightAndVehicles
         private bool _lateJoinResyncRequested = false;
         private bool _awaitingLateJoinResync = false;
         private int _lateJoinRetryCount = 0;
-
-        [Header("Debug")]
-        public bool EnableDebugLogs = true;
-
-        [Header("Slots")]
-        public SLMH_VehicleSlot_SingleDebug[] Slots;
-
-        [Header("LateJoin Bridge (child Udon)")]
-        public SLMH_LateJoinSyncBridge LateJoinBridge;
 
         // ---- Synced state (per slot, fixed max = 16) ----
         // active: -1 = inactive (LowPoly), 0 = active (Full)
@@ -458,15 +449,7 @@ namespace SaccFlightAndVehicles
 
         private SLMH_VehicleSlot_SingleDebug GetSlot(int slotId)
         {
-            int count = (Slots != null) ? Slots.Length : 0;
-            for (int i = 0; i < count; i++)
-            {
-                if (Slots[i] != null && Slots[i].SlotId == slotId)
-                {
-                    return Slots[i];
-                }
-            }
-            return null;
+            return GetSlotById(slotId);
         }
 
         private int GetActive(int slotId)
@@ -610,23 +593,9 @@ namespace SaccFlightAndVehicles
             }
         }
 
-        private void DLog(string msg)
-        {
-            if (!EnableDebugLogs) { return; }
-            VRCPlayerApi owner = Networking.GetOwner(gameObject);
-            int localId = Utilities.IsValid(Networking.LocalPlayer) ? Networking.LocalPlayer.playerId : -1;
-            string ownerName = SafeName(owner);
-            Debug.Log("[SlotMgr] L=" + localId + " Owner=" + ownerName + " | " + msg);
-        }
-
         private string FormatSlotState(int slotId)
         {
             return "slot=" + slotId + " active=" + GetActive(slotId) + " seq=" + GetSeq(slotId) + " tick=" + GetTick(slotId);
-        }
-
-        private string SafeName(VRCPlayerApi p)
-        {
-            return (p != null) ? p.displayName : "null";
         }
     }
 }

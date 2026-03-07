@@ -102,3 +102,13 @@
   - イベント駆動（状態反映時）
   - 低頻度の定期補正（既定60秒）
 
+## 14. Mode分割準備（実装反映）
+- 共通基盤として以下を追加:
+  - `SLMH_SlotManager_Base`
+  - `SLMH_VehicleSlot_Base`
+- 単一機種運用は子クラスへ接続:
+  - `SLMH_SlotManager_SingleDebug : SLMH_SlotManager_Base`
+  - `SLMH_VehicleSlot_SingleDebug : SLMH_VehicleSlot_Base`
+- 今後の方針:
+  - ModeA(32スロット) / ModeB(機種選択) は、同ベースから派生する構成で実装する。
+

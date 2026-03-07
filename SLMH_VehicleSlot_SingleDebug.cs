@@ -1,8 +1,8 @@
 ﻿// SLMH_VehicleSlot_SingleDebug.cs
 // コードの最終目的: 単一機種SlotのFull/LW機切替と解除判定、遅延Respawnを適用する
-// バージョン名: ver11
-// バージョン差分: Animator Parameter同期用SLMH_AnimSyncBridge連携を追加
-// バージョン更新日: 2026-03-07 22:57
+// バージョン名: ver12
+// バージョン差分: 共通処理をSLMH_VehicleSlot_Baseへ分離（継承構成へ移行）
+// バージョン更新日: 2026-03-07 23:39
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -11,30 +11,18 @@ using VRC.Udon.Common.Interfaces;
 namespace SaccFlightAndVehicles
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
-    public class SLMH_VehicleSlot_SingleDebug : UdonSharpBehaviour
+    public class SLMH_VehicleSlot_SingleDebug : SLMH_VehicleSlot_Base
     {
-        [Header("Identity")]
-        [Range(0, 15)] public int SlotId = 0;
-
         [Header("Single aircraft references (index 0)")]
         public GameObject FullRoot_0;
         public GameObject LowPolyRoot_0;
         public SaccEntitySendEvent Respawner_0;
         public SLMH_AnimSyncBridge AnimSyncBridge_0;
 
-        [Header("Release conditions (optional)")]
-        [Tooltip("Pilot seat (SaccVehicleSeat). If assigned, OFF is blocked while occupied.")]
-        public SaccVehicleSeat PrimarySeat;
-
-        [Tooltip("If assigned, OFF is blocked unless the active vehicle is inside this collider bounds.")]
-        public Collider ReleaseZone;
-
         [Header("Respawn timing")]
         [Range(0, 300)] public int RespawnDelayFrames = 30;
-        [Header("Debug")]
         [Tooltip("true: Active化時に遅延Respawnを送信 / false: 送信しない（同期切り分け用）")]
         public bool EnableRespawnOnActivate = false;
-        public bool EnableLocalDebugLogs = false;
 
         private int _lastSeqApplied = int.MinValue;
         private int _lastTickApplied = int.MinValue;
@@ -101,24 +89,9 @@ namespace SaccFlightAndVehicles
 
         public bool CanReleaseActive()
         {
-            if (!_isActiveLocal) { return true; }
-
-            if (PrimarySeat != null && PrimarySeat.SeatOccupied)
-            {
-                return false;
-            }
-
-            if (ReleaseZone != null)
-            {
-                Vector3 p = transform.position;
-                if (FullRoot_0 != null) { p = FullRoot_0.transform.position; }
-                if (!ReleaseZone.bounds.Contains(p))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            Vector3 p = transform.position;
+            if (FullRoot_0 != null) { p = FullRoot_0.transform.position; }
+            return CanReleaseByCommonRule(p, _isActiveLocal);
         }
 
         public void TriggerRespawnNow_All()
@@ -166,10 +139,5 @@ namespace SaccFlightAndVehicles
             AnimSyncBridge_0.NotifyStateApplied();
         }
 
-        private void DLog(string msg)
-        {
-            int localId = Utilities.IsValid(Networking.LocalPlayer) ? Networking.LocalPlayer.playerId : -1;
-            Debug.Log("[Slot " + SlotId + "] L=" + localId + " | " + msg);
-        }
     }
 }
