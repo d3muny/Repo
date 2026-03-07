@@ -1,8 +1,8 @@
 ﻿// SLMH_AnimSyncBridge.cs
 // コードの最終目的: Animator Parameterを同期し、遠距離やLateJoin時の見た目ズレを補正する
-// バージョン名: ver01
-// バージョン差分: 初版作成（最大5パラメータ、イベント駆動 + 60秒周期補正）
-// バージョン更新日: 2026-03-07 22:57
+// バージョン名: ver02
+// バージョン差分: InspectorにParamTypeガイド表示を追加
+// バージョン更新日: 2026-03-07 23:34
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -22,6 +22,8 @@ namespace SaccFlightAndVehicles
 
         [Header("Debug")]
         public bool EnableDebugLogs = false;
+
+        [Header("ParamType Guide: 0=Bool / 1=Float / 2=Int")]
 
         [Header("Param 1")]
         public string ParamName1;
@@ -272,4 +274,5 @@ namespace SaccFlightAndVehicles
         }
     }
 }
+
 
