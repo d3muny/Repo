@@ -1,8 +1,8 @@
 ﻿// SAV_SlotManager_SingleDebug.cs
 // コードの最終目的: Slot状態の同期管理を一元化し、Full/LowPoly切替とAll Respawnを制御する
-// バージョン名: ver12a
-// バージョン差分: コンパイルエラー修正（Slot.ApplyState呼び出しを6引数に統一）
-// バージョン更新日: 2026-03-07 16:23
+// バージョン名: ver13
+// バージョン差分: 同期不達対策として UdonSynced 変数を public 化（2人同期/LateJoin再検証用）
+// バージョン更新日: 2026-03-07 16:37
 
 using UdonSharp;
 using UnityEngine;
@@ -24,42 +24,42 @@ namespace SaccFlightAndVehicles
 
         // ---- Synced state (per slot, fixed max = 16) ----
         // -1 = inactive (LowPoly), 0 = active (Full)
-        [UdonSynced] private int s0_active = -1;
-        [UdonSynced] private int s1_active = -1;
-        [UdonSynced] private int s2_active = -1;
-        [UdonSynced] private int s3_active = -1;
-        [UdonSynced] private int s4_active = -1;
-        [UdonSynced] private int s5_active = -1;
-        [UdonSynced] private int s6_active = -1;
-        [UdonSynced] private int s7_active = -1;
-        [UdonSynced] private int s8_active = -1;
-        [UdonSynced] private int s9_active = -1;
-        [UdonSynced] private int s10_active = -1;
-        [UdonSynced] private int s11_active = -1;
-        [UdonSynced] private int s12_active = -1;
-        [UdonSynced] private int s13_active = -1;
-        [UdonSynced] private int s14_active = -1;
-        [UdonSynced] private int s15_active = -1;
+        [UdonSynced] public int s0_active = -1;
+        [UdonSynced] public int s1_active = -1;
+        [UdonSynced] public int s2_active = -1;
+        [UdonSynced] public int s3_active = -1;
+        [UdonSynced] public int s4_active = -1;
+        [UdonSynced] public int s5_active = -1;
+        [UdonSynced] public int s6_active = -1;
+        [UdonSynced] public int s7_active = -1;
+        [UdonSynced] public int s8_active = -1;
+        [UdonSynced] public int s9_active = -1;
+        [UdonSynced] public int s10_active = -1;
+        [UdonSynced] public int s11_active = -1;
+        [UdonSynced] public int s12_active = -1;
+        [UdonSynced] public int s13_active = -1;
+        [UdonSynced] public int s14_active = -1;
+        [UdonSynced] public int s15_active = -1;
 
         // seq increments whenever state changes (forces re-apply / respawn scheduling)
-        [UdonSynced] private int s0_seq = 0;
-        [UdonSynced] private int s1_seq = 0;
-        [UdonSynced] private int s2_seq = 0;
-        [UdonSynced] private int s3_seq = 0;
-        [UdonSynced] private int s4_seq = 0;
-        [UdonSynced] private int s5_seq = 0;
-        [UdonSynced] private int s6_seq = 0;
-        [UdonSynced] private int s7_seq = 0;
-        [UdonSynced] private int s8_seq = 0;
-        [UdonSynced] private int s9_seq = 0;
-        [UdonSynced] private int s10_seq = 0;
-        [UdonSynced] private int s11_seq = 0;
-        [UdonSynced] private int s12_seq = 0;
-        [UdonSynced] private int s13_seq = 0;
-        [UdonSynced] private int s14_seq = 0;
-        [UdonSynced] private int s15_seq = 0;
-        [UdonSynced] private int syncTick = 0;
-        [UdonSynced] private int lastWriterPlayerId = -1;
+        [UdonSynced] public int s0_seq = 0;
+        [UdonSynced] public int s1_seq = 0;
+        [UdonSynced] public int s2_seq = 0;
+        [UdonSynced] public int s3_seq = 0;
+        [UdonSynced] public int s4_seq = 0;
+        [UdonSynced] public int s5_seq = 0;
+        [UdonSynced] public int s6_seq = 0;
+        [UdonSynced] public int s7_seq = 0;
+        [UdonSynced] public int s8_seq = 0;
+        [UdonSynced] public int s9_seq = 0;
+        [UdonSynced] public int s10_seq = 0;
+        [UdonSynced] public int s11_seq = 0;
+        [UdonSynced] public int s12_seq = 0;
+        [UdonSynced] public int s13_seq = 0;
+        [UdonSynced] public int s14_seq = 0;
+        [UdonSynced] public int s15_seq = 0;
+        [UdonSynced] public int syncTick = 0;
+        [UdonSynced] public int lastWriterPlayerId = -1;
 
         private void Start()
         {
@@ -314,3 +314,4 @@ namespace SaccFlightAndVehicles
         }
     }
 }
+
