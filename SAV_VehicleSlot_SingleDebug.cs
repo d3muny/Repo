@@ -1,8 +1,8 @@
 ﻿// SAV_VehicleSlot_SingleDebug.cs
 // コードの最終目的: 単一機種SlotのFull/LowPoly切替と解除判定、遅延Respawnを適用する
-// バージョン名: ver01
-// バージョン差分: 初版ヘッダ整備
-// バージョン更新日: 2026-03-05
+// バージョン名: ver08a
+// バージョン差分: コンパイルエラー修正（ApplyStateシグネチャを6引数に統一）
+// バージョン更新日: 2026-03-07 16:23
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -35,7 +35,7 @@ namespace SaccFlightAndVehicles
         private int _lastRespawnSeqScheduled = int.MinValue;
         private bool _isActiveLocal = false;
 
-        public void ApplyState(int activeIndex, int seq, bool force)
+        public void ApplyState(int activeIndex, int seq, int tick, bool force, bool fromDeserialization, bool fromVisualBroadcast)
         {
             if (!force && seq == _lastSeqApplied) { return; }
             _lastSeqApplied = seq;

@@ -1,8 +1,8 @@
 ﻿// SAV_SlotManager_SingleDebug.cs
 // コードの最終目的: Slot状態の同期管理を一元化し、Full/LowPoly切替とAll Respawnを制御する
-// バージョン名: ver01
-// バージョン差分: 初版ヘッダ整備
-// バージョン更新日: 2026-03-05
+// バージョン名: ver12a
+// バージョン差分: コンパイルエラー修正（Slot.ApplyState呼び出しを6引数に統一）
+// バージョン更新日: 2026-03-07 16:23
 
 using UdonSharp;
 using UnityEngine;
@@ -19,6 +19,8 @@ namespace SaccFlightAndVehicles
 
         [Header("Slots")]
         public SAV_VehicleSlot_SingleDebug[] Slots;
+        [Header("Debug")]
+        public bool EnableDebugLog = true;
 
         // ---- Synced state (per slot, fixed max = 16) ----
         // -1 = inactive (LowPoly), 0 = active (Full)
@@ -56,6 +58,8 @@ namespace SaccFlightAndVehicles
         [UdonSynced] private int s13_seq = 0;
         [UdonSynced] private int s14_seq = 0;
         [UdonSynced] private int s15_seq = 0;
+        [UdonSynced] private int syncTick = 0;
+        [UdonSynced] private int lastWriterPlayerId = -1;
 
         private void Start()
         {
@@ -65,6 +69,7 @@ namespace SaccFlightAndVehicles
         public override void OnDeserialization()
         {
             ApplyAll(false);
+            LogSyncState("OnDeserialization");
         }
 
         // UI calls this
@@ -128,6 +133,11 @@ namespace SaccFlightAndVehicles
         {
             SetActive(slotId, next);
             IncSeq(slotId);
+            syncTick++;
+            if (Utilities.IsValid(Networking.LocalPlayer))
+            {
+                lastWriterPlayerId = Networking.LocalPlayer.playerId;
+            }
 
             RequestSerialization();
             ApplyAll(true);
@@ -135,7 +145,8 @@ namespace SaccFlightAndVehicles
             // Safe owner name logging (no ?. operator)
             VRCPlayerApi owner = Networking.GetOwner(gameObject);
             string ownerName = (owner != null) ? owner.displayName : "null";
-            Debug.Log("[SlotMgr] ApplyToggle slot=" + slotId + " next=" + next + " owner=" + ownerName);
+            Debug.Log("[SlotMgr] ApplyToggle slot=" + slotId + " next=" + next + " tick=" + syncTick + " writer=" + lastWriterPlayerId + " owner=" + ownerName);
+            LogSyncState("ApplyToggleLocal");
         }
 
         public void AllRespawn()
@@ -166,7 +177,7 @@ namespace SaccFlightAndVehicles
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
 
-                slot.ApplyState(GetActive(id), GetSeq(id), force);
+                slot.ApplyState(GetActive(id), GetSeq(id), syncTick, force, false, false);
             }
         }
 
@@ -274,6 +285,31 @@ namespace SaccFlightAndVehicles
                 case 13: s13_seq++; break;
                 case 14: s14_seq++; break;
                 case 15: s15_seq++; break;
+            }
+        }
+
+        private void LogSyncState(string tag)
+        {
+            if (!EnableDebugLog) { return; }
+
+            int localId = -1;
+            if (Utilities.IsValid(Networking.LocalPlayer))
+            {
+                localId = Networking.LocalPlayer.playerId;
+            }
+
+            VRCPlayerApi owner = Networking.GetOwner(gameObject);
+            string ownerText = (owner != null) ? (owner.displayName + "(" + owner.playerId + ")") : "null";
+            Debug.Log("[SlotMgr] " + tag + " local=" + localId + " owner=" + ownerText + " writer=" + lastWriterPlayerId + " tick=" + syncTick);
+
+            int count = (Slots != null) ? Slots.Length : 0;
+            for (int i = 0; i < count; i++)
+            {
+                SAV_VehicleSlot_SingleDebug slot = Slots[i];
+                if (slot == null) { continue; }
+                int id = slot.SlotId;
+                if (id < 0 || id > 15) { continue; }
+                Debug.Log("[SlotMgr] " + tag + " slot=" + id + " active=" + GetActive(id) + " seq=" + GetSeq(id));
             }
         }
     }
