@@ -65,3 +65,28 @@
 
 ## 10. Inspector表示
 - 実行不可条件や注意喚起は、見落とし防止のため **Inspector上のHelpBox表示** を採用する。
+
+## 11. LateJoin同期ブリッジ（実装反映）
+- `VehicleSlotManager` 配下に子Udonとして **`SAV_LateJoinSyncBridge`** を配置する。
+- 役割分担:
+  - `SAV_SlotManager_SingleDebug`: 通常同期・状態保持・Apply実行。
+  - `SAV_LateJoinSyncBridge`: LateJoin時のスナップショット要求/応答専用チャネル。
+- Joiner側の流れ:
+  - Join後に遅延して `NetRequestSnapshot` を `All` へ送信。
+  - 未受信時は最大回数まで再要求。
+- インスタンスマスター側の流れ:
+  - 要求受信時にブリッジのOwnerを確保。
+  - 全Slotのactive状態をスナップショット化して同期送信。
+  - 到達安定化のため2nd pass再送を行う。
+- 受信側の適用:
+  - `OnDeserialization` でbridge値をManagerへ反映し、`ApplyAll` で見た目へ適用。
+
+## 12. デバッグログ運用（実装反映）
+- 重要ログはVRChatクライアントログに出力される（Unity Consoleのみを正としない）。
+- 主な確認観点:
+  - Joinerの要求送信
+  - マスターの要求受信
+  - スナップショット送信（1st/2nd）
+  - Joiner側の逆シリアライズ適用
+- ログ保存先:
+  - `C:\Users\satoshi\AppData\LocalLow\VRChat\VRChat\output_log_*.txt`
