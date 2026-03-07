@@ -1,8 +1,8 @@
 ﻿// SAV_SlotManager_SingleDebug.cs
 // コードの最終目的: Slot状態の同期管理を一元化し、Full/LowPoly切替とAll Respawnを制御する
-// バージョン名: ver14
-// バージョン差分: ver11実装へロールバックし、連番を最新へ正規化
-// バージョン更新日: 2026-03-07 16:48
+// バージョン名: ver16
+// バージョン差分: LateJoin再同期は「インスタンスマスターがオーナー取得して返す」経路に一本化
+// バージョン更新日: 2026-03-07 16:57
 
 using UdonSharp;
 using UnityEngine;
