@@ -1,8 +1,8 @@
 ﻿// SAV_SlotManager_SingleDebug.cs
 // コードの最終目的: Slot状態の同期管理を一元化し、Full/LowPoly切替とAll Respawnを制御する
-// バージョン名: ver17
-// バージョン差分: LateJoin再同期要求をリトライ化（joiner側再要求＋master側再送）
-// バージョン更新日: 2026-03-07 17:05
+// バージョン名: ver18
+// バージョン差分: LateJoin再送時に視覚状態から同期スナップショットを再構築して送信
+// バージョン更新日: 2026-03-07 17:12
 
 using UdonSharp;
 using UnityEngine;
@@ -218,7 +218,7 @@ namespace SaccFlightAndVehicles
             if (Networking.IsOwner(gameObject)) { return; }
 
             _lateJoinRetryCount++;
-            if (_lateJoinRetryCount > 6)
+            if (_lateJoinRetryCount > 3)
             {
                 DLog("LateJoinResync retry exhausted");
                 _awaitingLateJoinResync = false;
@@ -259,14 +259,7 @@ namespace SaccFlightAndVehicles
             if (!Networking.IsOwner(gameObject)) { return; }
 
             syncEpoch++;
-            lastWriteSlot = -1;
-            lastWriteByPlayerId = Utilities.IsValid(Networking.LocalPlayer) ? Networking.LocalPlayer.playerId : -1;
-            lastWriteActive = -3;
-            lastWriteSeq = -1;
-            lastWriteTick = writeCounter;
-
-            RequestSerialization();
-            ApplyAll(true);
+            ReserializeSnapshotFromVisuals();
             DLog("LateJoinResyncDelayed epoch=" + syncEpoch + " writer=" + lastWriteByPlayerId);
             SendCustomEventDelayedSeconds(nameof(_OwnerLateJoinResyncSecondPass), 1.0f);
         }
@@ -276,14 +269,7 @@ namespace SaccFlightAndVehicles
             if (!Networking.IsOwner(gameObject)) { return; }
 
             syncEpoch++;
-            lastWriteSlot = -1;
-            lastWriteByPlayerId = Utilities.IsValid(Networking.LocalPlayer) ? Networking.LocalPlayer.playerId : -1;
-            lastWriteActive = -4;
-            lastWriteSeq = -1;
-            lastWriteTick = writeCounter;
-
-            RequestSerialization();
-            ApplyAll(true);
+            ReserializeSnapshotFromVisuals();
             DLog("LateJoinResyncSecondPass epoch=" + syncEpoch + " writer=" + lastWriteByPlayerId);
         }
 
