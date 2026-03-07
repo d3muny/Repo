@@ -1,8 +1,8 @@
 ﻿// SAV_SlotManager_SingleDebug.cs
 // コードの最終目的: Slot状態の同期管理を一元化し、Full/LowPoly切替とAll Respawnを制御する
-// バージョン名: ver18
-// バージョン差分: LateJoin再送時に視覚状態から同期スナップショットを再構築して送信
-// バージョン更新日: 2026-03-07 17:12
+// バージョン名: ver19
+// バージョン差分: LateJoin専用の子Udon連携に対応（internal再同期との併用を抑制）
+// バージョン更新日: 2026-03-07 17:26
 
 using UdonSharp;
 using UnityEngine;
@@ -26,6 +26,9 @@ namespace SaccFlightAndVehicles
 
         [Header("Slots")]
         public SAV_VehicleSlot_SingleDebug[] Slots;
+
+        [Header("LateJoin Bridge (child Udon)")]
+        public SAV_LateJoinSyncBridge LateJoinBridge;
 
         // ---- Synced state (per slot, fixed max = 16) ----
         // active: -1 = inactive (LowPoly), 0 = active (Full)
@@ -98,8 +101,13 @@ namespace SaccFlightAndVehicles
             ApplyAll(true);
             DLog("Start ApplyAll(force=true)");
 
+            if (LateJoinBridge != null)
+            {
+                LateJoinBridge.Manager = this;
+            }
+
             // Late join helper: request a resync from Instance Master once.
-            if (!_lateJoinResyncRequested)
+            if (LateJoinBridge == null && !_lateJoinResyncRequested)
             {
                 _lateJoinResyncRequested = true;
                 SendCustomEventDelayedSeconds(nameof(_RequestLateJoinResyncFromMaster), 1.2f);
@@ -186,6 +194,7 @@ namespace SaccFlightAndVehicles
         public override void OnPlayerJoined(VRCPlayerApi player)
         {
             DLog("OnPlayerJoined player=" + player.playerId + ":" + SafeName(player) + " localIsOwner=" + Networking.IsOwner(gameObject));
+            if (LateJoinBridge != null) { return; }
             if (Networking.IsOwner(gameObject))
             {
                 // Late join path: send authoritative synced state after a short delay.
@@ -203,12 +212,31 @@ namespace SaccFlightAndVehicles
         {
             if (!Utilities.IsValid(Networking.LocalPlayer)) { return; }
             if (Networking.IsOwner(gameObject)) { return; }
+            if (LateJoinBridge != null) { return; }
 
             DLog("RequestLateJoinResyncFromMaster send");
             _awaitingLateJoinResync = true;
             _lateJoinRetryCount = 0;
             SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.All, nameof(NetLateJoinResyncRequest));
             SendCustomEventDelayedSeconds(nameof(_RetryLateJoinResyncRequest), 1.6f);
+        }
+
+        // ---- LateJoin child bridge helper API ----
+        public int GetActiveForBridge(int slotId)
+        {
+            return GetActive(slotId);
+        }
+
+        public void SetActiveForBridge(int slotId, int value)
+        {
+            SetActive(slotId, value);
+        }
+
+        public void ApplyAllFromLateJoinBridge(int bridgeEpoch, int bridgeWriterId)
+        {
+            _awaitingLateJoinResync = false;
+            ApplyAll(true);
+            DLog("LateJoinBridgeApply epoch=" + bridgeEpoch + " writer=" + bridgeWriterId);
         }
 
         public void _RetryLateJoinResyncRequest()
