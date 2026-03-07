@@ -91,3 +91,14 @@
 - ログ保存先:
   - `C:\Users\satoshi\AppData\LocalLow\VRChat\VRChat\output_log_*.txt`
 
+## 13. Animation同期ブリッジ（実装反映）
+- `SLMH_AnimSyncBridge` を追加し、Animator Parameter同期を担当する。
+- `SLMH_VehicleSlot_SingleDebug` から状態反映時に `SLMH_AnimSyncBridge` を発火する。
+  - 通常操作（Manager経由）とLateJoin復元（LateJoinBridge経由）の両経路で同じ発火に乗る。
+- 同期対象は最大5枠。
+  - 各枠: `ParamName` + `ParamType(0=Bool,1=Float,2=Int)`
+  - 空欄はスキップ。
+- 同期方式:
+  - イベント駆動（状態反映時）
+  - 低頻度の定期補正（既定60秒）
+

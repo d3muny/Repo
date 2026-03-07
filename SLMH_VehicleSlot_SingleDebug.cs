@@ -1,8 +1,8 @@
 ﻿// SLMH_VehicleSlot_SingleDebug.cs
-// コードの最終目的: 単一機種SlotのFull/LowPoly切替と解除判定、遅延Respawnを適用する
-// バージョン名: ver10
-// バージョン差分: 接頭語をSAV_からSLMH_へ統一
-// バージョン更新日: 2026-03-07 20:09
+// コードの最終目的: 単一機種SlotのFull/LW機切替と解除判定、遅延Respawnを適用する
+// バージョン名: ver11
+// バージョン差分: Animator Parameter同期用SLMH_AnimSyncBridge連携を追加
+// バージョン更新日: 2026-03-07 22:57
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -20,6 +20,7 @@ namespace SaccFlightAndVehicles
         public GameObject FullRoot_0;
         public GameObject LowPolyRoot_0;
         public SaccEntitySendEvent Respawner_0;
+        public SLMH_AnimSyncBridge AnimSyncBridge_0;
 
         [Header("Release conditions (optional)")]
         [Tooltip("Pilot seat (SaccVehicleSeat). If assigned, OFF is blocked while occupied.")]
@@ -42,7 +43,6 @@ namespace SaccFlightAndVehicles
 
         public bool IsVisualActive()
         {
-            // Prefer local state cache, fallback to actual object active state
             if (FullRoot_0 != null) { return FullRoot_0.activeSelf; }
             return _isActiveLocal;
         }
@@ -80,6 +80,8 @@ namespace SaccFlightAndVehicles
             }
 
             _isActiveLocal = shouldBeActive;
+            NotifyAnimBridgeStateChanged(shouldBeActive);
+
             if (debug)
             {
                 DLog("ApplyState applied incoming(active=" + activeIndex + ",seq=" + seq + ",tick=" + tick + ") force=" + force + " allowRespawnTrigger=" + allowRespawnTrigger + " visualActive=" + IsVisualActive());
@@ -133,22 +135,35 @@ namespace SaccFlightAndVehicles
             Respawner_0.SendCustomNetworkEvent(NetworkEventTarget.All, "NormalEvent");
         }
 
-        // Called by manager via SendCustomNetworkEvent(All)
         public void NetSetActiveVisual()
         {
             SetFull(true);
             SetLowPoly(false);
             _isActiveLocal = true;
+            NotifyAnimBridgeStateChanged(true);
             if (EnableLocalDebugLogs) { DLog("NetSetActiveVisual"); }
         }
 
-        // Called by manager via SendCustomNetworkEvent(All)
         public void NetSetInactiveVisual()
         {
             SetFull(false);
             SetLowPoly(true);
             _isActiveLocal = false;
+            NotifyAnimBridgeStateChanged(false);
             if (EnableLocalDebugLogs) { DLog("NetSetInactiveVisual"); }
+        }
+
+        private void NotifyAnimBridgeStateChanged(bool active)
+        {
+            if (AnimSyncBridge_0 == null) { return; }
+
+            if (!active)
+            {
+                AnimSyncBridge_0.NotifySlotBecameInactive();
+                return;
+            }
+
+            AnimSyncBridge_0.NotifyStateApplied();
         }
 
         private void DLog(string msg)
@@ -158,5 +173,3 @@ namespace SaccFlightAndVehicles
         }
     }
 }
-
-
