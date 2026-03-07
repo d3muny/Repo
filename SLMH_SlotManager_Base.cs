@@ -16,12 +16,12 @@ namespace SaccFlightAndVehicles
         public bool EnableDebugLogs = true;
 
         [Header("Slots")]
-        public SLMH_VehicleSlot_SingleDebug[] Slots;
+        public SLMH_VehicleSlot_Single[] Slots;
 
         [Header("LateJoin Bridge (child Udon)")]
         public SLMH_LateJoinSyncBridge LateJoinBridge;
 
-        protected SLMH_VehicleSlot_SingleDebug GetSlotById(int slotId)
+        protected SLMH_VehicleSlot_Single GetSlotById(int slotId)
         {
             int count = (Slots != null) ? Slots.Length : 0;
             for (int i = 0; i < count; i++)
@@ -49,3 +49,4 @@ namespace SaccFlightAndVehicles
         }
     }
 }
+

@@ -69,7 +69,7 @@
 ## 11. LateJoin同期ブリッジ（実装反映）
 - `VehicleSlotManager` 配下に子Udonとして **`SLMH_LateJoinSyncBridge`** を配置する。
 - 役割分担:
-  - `SLMH_SlotManager_SingleDebug`: 通常同期・状態保持・Apply実行。
+  - `SLMH_SlotManager_Single`: 通常同期・状態保持・Apply実行。
   - `SLMH_LateJoinSyncBridge`: LateJoin時のスナップショット要求/応答専用チャネル。
 - Joiner側の流れ:
   - Join後に遅延して `NetRequestSnapshot` を `All` へ送信。
@@ -93,7 +93,7 @@
 
 ## 13. Animation同期ブリッジ（実装反映）
 - `SLMH_AnimSyncBridge` を追加し、Animator Parameter同期を担当する。
-- `SLMH_VehicleSlot_SingleDebug` から状態反映時に `SLMH_AnimSyncBridge` を発火する。
+- `SLMH_VehicleSlot_Single` から状態反映時に `SLMH_AnimSyncBridge` を発火する。
   - 通常操作（Manager経由）とLateJoin復元（LateJoinBridge経由）の両経路で同じ発火に乗る。
 - 同期対象は最大5枠。
   - 各枠: `ParamName` + `ParamType(0=Bool,1=Float,2=Int)`
@@ -107,8 +107,9 @@
   - `SLMH_SlotManager_Base`
   - `SLMH_VehicleSlot_Base`
 - 単一機種運用は子クラスへ接続:
-  - `SLMH_SlotManager_SingleDebug : SLMH_SlotManager_Base`
-  - `SLMH_VehicleSlot_SingleDebug : SLMH_VehicleSlot_Base`
+  - `SLMH_SlotManager_Single : SLMH_SlotManager_Base`
+  - `SLMH_VehicleSlot_Single : SLMH_VehicleSlot_Base`
 - 今後の方針:
   - ModeA(32スロット) / ModeB(機種選択) は、同ベースから派生する構成で実装する。
+
 

@@ -1,8 +1,6 @@
-﻿// SLMH_LateJoinSyncBridge.cs
-// コードの最終目的: LateJoin時の状態要求とスナップショット反映を安定化する
-// バージョン名: ver03
-// バージョン差分: Manager参照型をSingle命名へ追従
-// バージョン更新日: 2026-03-07 23:46
+﻿// SAV_LateJoinSyncBridge.cs
+// 繧ｳ繝ｼ繝峨・譛邨ら岼逧・ LateJoin蟆ら畑縺ｮ霆ｽ驥丞酔譛溘メ繝｣繝阪Ν縺ｨ縺励※縲√う繝ｳ繧ｹ繧ｿ繝ｳ繧ｹ繝槭せ繧ｿ繝ｼ縺九ｉ迥ｶ諷九せ繝翫ャ繝励す繝ｧ繝・ヨ繧帝・蟶・☆繧・// 繝舌・繧ｸ繝ｧ繝ｳ蜷・ ver01
+// 繝舌・繧ｸ繝ｧ繝ｳ蟾ｮ蛻・ 蛻晉沿・・ehicleSlotManager蟄舌が繝悶ず繧ｧ繧ｯ繝亥髄縺・LateJoin 蜷梧悄讖区ｸ｡縺暦ｼ・// 繝舌・繧ｸ繝ｧ繝ｳ譖ｴ譁ｰ譌･: 2026-03-07 17:26
 
 using UdonSharp;
 using UnityEngine;
@@ -11,10 +9,10 @@ using VRC.SDKBase;
 namespace SaccFlightAndVehicles
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
-    public class SLMH_LateJoinSyncBridge : UdonSharpBehaviour
+    public class SAV_LateJoinSyncBridge : UdonSharpBehaviour
     {
         [Header("Refs")]
-        public SLMH_SlotManager_Single Manager;
+        public SAV_SlotManager_SingleDebug Manager;
 
         [Header("Debug")]
         public bool EnableDebugLogs = true;
@@ -37,6 +35,7 @@ namespace SaccFlightAndVehicles
         [UdonSynced] public int s13_active = -1;
         [UdonSynced] public int s14_active = -1;
         [UdonSynced] public int s15_active = -1;
+
         private int _lastAppliedEpoch = int.MinValue;
         private bool _awaitingSnapshot = false;
         private int _retryCount = 0;
@@ -213,7 +212,4 @@ namespace SaccFlightAndVehicles
         }
     }
 }
-
-
-
 

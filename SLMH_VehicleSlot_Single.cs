@@ -1,8 +1,8 @@
-﻿// SLMH_VehicleSlot_SingleDebug.cs
+﻿// SLMH_VehicleSlot_Single.cs
 // コードの最終目的: 単一機種SlotのFull/LW機切替と解除判定、遅延Respawnを適用する
-// バージョン名: ver12
-// バージョン差分: 共通処理をSLMH_VehicleSlot_Baseへ分離（継承構成へ移行）
-// バージョン更新日: 2026-03-07 23:39
+// バージョン名: ver13
+// バージョン差分: クラス名からDebugを除去しSingle命名へ統一
+// バージョン更新日: 2026-03-07 23:46
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -11,7 +11,7 @@ using VRC.Udon.Common.Interfaces;
 namespace SaccFlightAndVehicles
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
-    public class SLMH_VehicleSlot_SingleDebug : SLMH_VehicleSlot_Base
+    public class SLMH_VehicleSlot_Single : SLMH_VehicleSlot_Base
     {
         [Header("Single aircraft references (index 0)")]
         public GameObject FullRoot_0;
@@ -141,3 +141,5 @@ namespace SaccFlightAndVehicles
 
     }
 }
+
+

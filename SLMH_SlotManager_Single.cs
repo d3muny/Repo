@@ -1,8 +1,8 @@
-﻿// SLMH_SlotManager_SingleDebug.cs
+﻿// SLMH_SlotManager_Single.cs
 // コードの最終目的: Slot状態の同期管理を一元化し、Full/LowPoly切替とAll Respawnを制御する
-// バージョン名: ver21
-// バージョン差分: 共通処理をSLMH_SlotManager_Baseへ分離（継承構成へ移行）
-// バージョン更新日: 2026-03-07 23:39
+// バージョン名: ver22
+// バージョン差分: クラス名からDebugを除去しSingle命名へ統一
+// バージョン更新日: 2026-03-07 23:46
 
 using UdonSharp;
 using UnityEngine;
@@ -11,7 +11,7 @@ using VRC.SDKBase;
 namespace SaccFlightAndVehicles
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
-    public class SLMH_SlotManager_SingleDebug : SLMH_SlotManager_Base
+    public class SLMH_SlotManager_Single : SLMH_SlotManager_Base
     {
         private int _pendingSlotId = -1;
         private int _pendingNext = -1;
@@ -135,7 +135,7 @@ namespace SaccFlightAndVehicles
 
             if (cur == 0)
             {
-                SLMH_VehicleSlot_SingleDebug slot = GetSlot(slotId);
+                SLMH_VehicleSlot_Single slot = GetSlot(slotId);
                 if (slot != null && !slot.CanReleaseActive())
                 {
                     DLog("RequestToggleActive blocked by CanReleaseActive slot=" + slotId);
@@ -352,7 +352,7 @@ namespace SaccFlightAndVehicles
             int count = (Slots != null) ? Slots.Length : 0;
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_SingleDebug slot = Slots[i];
+                SLMH_VehicleSlot_Single slot = Slots[i];
                 if (!slot) { continue; }
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
@@ -369,7 +369,7 @@ namespace SaccFlightAndVehicles
             int count = (Slots != null) ? Slots.Length : 0;
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_SingleDebug slot = Slots[i];
+                SLMH_VehicleSlot_Single slot = Slots[i];
                 if (!slot) { continue; }
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
@@ -392,7 +392,7 @@ namespace SaccFlightAndVehicles
 
         private void BroadcastVisualState(int slotId, int next)
         {
-            SLMH_VehicleSlot_SingleDebug slot = GetSlot(slotId);
+            SLMH_VehicleSlot_Single slot = GetSlot(slotId);
             if (!slot) { return; }
 
             if (next == 0)
@@ -412,7 +412,7 @@ namespace SaccFlightAndVehicles
             int count = (Slots != null) ? Slots.Length : 0;
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_SingleDebug slot = Slots[i];
+                SLMH_VehicleSlot_Single slot = Slots[i];
                 if (!slot) { continue; }
 
                 if (slot.SlotId < 0 || slot.SlotId > 15) { continue; }
@@ -431,7 +431,7 @@ namespace SaccFlightAndVehicles
             bool localIsOwner = Networking.IsOwner(gameObject);
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_SingleDebug slot = Slots[i];
+                SLMH_VehicleSlot_Single slot = Slots[i];
                 if (!slot) { continue; }
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
@@ -447,7 +447,7 @@ namespace SaccFlightAndVehicles
             }
         }
 
-        private SLMH_VehicleSlot_SingleDebug GetSlot(int slotId)
+        private SLMH_VehicleSlot_Single GetSlot(int slotId)
         {
             return GetSlotById(slotId);
         }
@@ -599,5 +599,7 @@ namespace SaccFlightAndVehicles
         }
     }
 }
+
+
 
 
