@@ -12,7 +12,7 @@
 ## 3. スロット/機種設計
 - Slot は最大16（`Slot_00` ～ `Slot_15`）を想定。
 - 機種指定は運用上 **A, B, C...** を使用（内部では index 0..15 対応）。
-- `SAV_VehicleSlot` は機種参照を最大16枠分持つ前提（可変長ではなく固定上限）。
+- `SLMH_VehicleSlot` は機種参照を最大16枠分持つ前提（可変長ではなく固定上限）。
 - `VehicleCount` で有効機種範囲を制限（例: 3ならA→B→Cでループ）。
 
 ## 4. 状態ルール
@@ -36,21 +36,21 @@
 - All Respawn は「Active中の機体」を対象に発火し、細かい可否は既存処理に委譲。
 
 ## 7. TMPラベル仕様
-- `SAV_SlotLabel` は **TMPと同じGameObject** に付与。
+- `SLMH_SlotLabel` は **TMPと同じGameObject** に付与。
 - 表示は `Prefix + 2桁SlotId`（例: `Slot03`）。
 - Prefix と SlotId の間に区切り（アンダーバー等）は自動付与しない。
   - 必要ならPrefix側にユーザーが記入。
 
 ## 8. 初期割当テーブル
-- 保存場所は `VehicleSlotManager` 本体ではなく、**子オブジェクト `SAV_DefaultAssignments`**。
-- `SAV_DefaultAssignments` は16スロット分の初期値を保持:
+- 保存場所は `VehicleSlotManager` 本体ではなく、**子オブジェクト `SLMH_DefaultAssignments`**。
+- `SLMH_DefaultAssignments` は16スロット分の初期値を保持:
   - 機種（A..P）
   - 初期モード（Full / LowPoly）
 - 実際の生成数（`GenerateSlotCount`）は別入力。
   - 生成されないスロット分の初期値は適用対象外（参照されない）。
 
 ## 9. Slot自動生成（Editor拡張）
-- 実行場所: `SAV_DefaultAssignments` のInspectorボタン。
+- 実行場所: `SLMH_DefaultAssignments` のInspectorボタン。
 - 複製元: 常に `Slot_00`。
 - 生成先: `Slot_01` 以降（最大 `Slot_15`）。
 - 生成時オプション:
@@ -67,10 +67,10 @@
 - 実行不可条件や注意喚起は、見落とし防止のため **Inspector上のHelpBox表示** を採用する。
 
 ## 11. LateJoin同期ブリッジ（実装反映）
-- `VehicleSlotManager` 配下に子Udonとして **`SAV_LateJoinSyncBridge`** を配置する。
+- `VehicleSlotManager` 配下に子Udonとして **`SLMH_LateJoinSyncBridge`** を配置する。
 - 役割分担:
-  - `SAV_SlotManager_SingleDebug`: 通常同期・状態保持・Apply実行。
-  - `SAV_LateJoinSyncBridge`: LateJoin時のスナップショット要求/応答専用チャネル。
+  - `SLMH_SlotManager_SingleDebug`: 通常同期・状態保持・Apply実行。
+  - `SLMH_LateJoinSyncBridge`: LateJoin時のスナップショット要求/応答専用チャネル。
 - Joiner側の流れ:
   - Join後に遅延して `NetRequestSnapshot` を `All` へ送信。
   - 未受信時は最大回数まで再要求。
@@ -90,3 +90,4 @@
   - Joiner側の逆シリアライズ適用
 - ログ保存先:
   - `C:\Users\satoshi\AppData\LocalLow\VRChat\VRChat\output_log_*.txt`
+

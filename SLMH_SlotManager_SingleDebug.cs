@@ -1,8 +1,8 @@
-﻿// SAV_SlotManager_SingleDebug.cs
+﻿// SLMH_SlotManager_SingleDebug.cs
 // コードの最終目的: Slot状態の同期管理を一元化し、Full/LowPoly切替とAll Respawnを制御する
-// バージョン名: ver19
-// バージョン差分: LateJoin専用の子Udon連携に対応（internal再同期との併用を抑制）
-// バージョン更新日: 2026-03-07 17:26
+// バージョン名: ver20
+// バージョン差分: 接頭語をSAV_からSLMH_へ統一
+// バージョン更新日: 2026-03-07 20:09
 
 using UdonSharp;
 using UnityEngine;
@@ -11,7 +11,7 @@ using VRC.SDKBase;
 namespace SaccFlightAndVehicles
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
-    public class SAV_SlotManager_SingleDebug : UdonSharpBehaviour
+    public class SLMH_SlotManager_SingleDebug : UdonSharpBehaviour
     {
         private int _pendingSlotId = -1;
         private int _pendingNext = -1;
@@ -25,10 +25,10 @@ namespace SaccFlightAndVehicles
         public bool EnableDebugLogs = true;
 
         [Header("Slots")]
-        public SAV_VehicleSlot_SingleDebug[] Slots;
+        public SLMH_VehicleSlot_SingleDebug[] Slots;
 
         [Header("LateJoin Bridge (child Udon)")]
-        public SAV_LateJoinSyncBridge LateJoinBridge;
+        public SLMH_LateJoinSyncBridge LateJoinBridge;
 
         // ---- Synced state (per slot, fixed max = 16) ----
         // active: -1 = inactive (LowPoly), 0 = active (Full)
@@ -144,7 +144,7 @@ namespace SaccFlightAndVehicles
 
             if (cur == 0)
             {
-                SAV_VehicleSlot_SingleDebug slot = GetSlot(slotId);
+                SLMH_VehicleSlot_SingleDebug slot = GetSlot(slotId);
                 if (slot != null && !slot.CanReleaseActive())
                 {
                     DLog("RequestToggleActive blocked by CanReleaseActive slot=" + slotId);
@@ -361,7 +361,7 @@ namespace SaccFlightAndVehicles
             int count = (Slots != null) ? Slots.Length : 0;
             for (int i = 0; i < count; i++)
             {
-                SAV_VehicleSlot_SingleDebug slot = Slots[i];
+                SLMH_VehicleSlot_SingleDebug slot = Slots[i];
                 if (!slot) { continue; }
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
@@ -378,7 +378,7 @@ namespace SaccFlightAndVehicles
             int count = (Slots != null) ? Slots.Length : 0;
             for (int i = 0; i < count; i++)
             {
-                SAV_VehicleSlot_SingleDebug slot = Slots[i];
+                SLMH_VehicleSlot_SingleDebug slot = Slots[i];
                 if (!slot) { continue; }
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
@@ -401,7 +401,7 @@ namespace SaccFlightAndVehicles
 
         private void BroadcastVisualState(int slotId, int next)
         {
-            SAV_VehicleSlot_SingleDebug slot = GetSlot(slotId);
+            SLMH_VehicleSlot_SingleDebug slot = GetSlot(slotId);
             if (!slot) { return; }
 
             if (next == 0)
@@ -421,7 +421,7 @@ namespace SaccFlightAndVehicles
             int count = (Slots != null) ? Slots.Length : 0;
             for (int i = 0; i < count; i++)
             {
-                SAV_VehicleSlot_SingleDebug slot = Slots[i];
+                SLMH_VehicleSlot_SingleDebug slot = Slots[i];
                 if (!slot) { continue; }
 
                 if (slot.SlotId < 0 || slot.SlotId > 15) { continue; }
@@ -440,7 +440,7 @@ namespace SaccFlightAndVehicles
             bool localIsOwner = Networking.IsOwner(gameObject);
             for (int i = 0; i < count; i++)
             {
-                SAV_VehicleSlot_SingleDebug slot = Slots[i];
+                SLMH_VehicleSlot_SingleDebug slot = Slots[i];
                 if (!slot) { continue; }
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
@@ -456,7 +456,7 @@ namespace SaccFlightAndVehicles
             }
         }
 
-        private SAV_VehicleSlot_SingleDebug GetSlot(int slotId)
+        private SLMH_VehicleSlot_SingleDebug GetSlot(int slotId)
         {
             int count = (Slots != null) ? Slots.Length : 0;
             for (int i = 0; i < count; i++)
@@ -630,3 +630,5 @@ namespace SaccFlightAndVehicles
         }
     }
 }
+
+

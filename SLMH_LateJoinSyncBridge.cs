@@ -1,8 +1,8 @@
-// SAV_LateJoinSyncBridge.cs
-// コードの最終目的: LateJoin専用の軽量同期チャネルとして、インスタンスマスターから状態スナップショットを配布する
-// バージョン名: ver01
-// バージョン差分: 初版（VehicleSlotManager子オブジェクト向け LateJoin 同期橋渡し）
-// バージョン更新日: 2026-03-07 17:26
+﻿// SLMH_LateJoinSyncBridge.cs
+// コードの最終目的: LateJoin時の状態要求とスナップショット反映を安定化する
+// バージョン名: ver02
+// バージョン差分: 接頭語をSAV_からSLMH_へ統一
+// バージョン更新日: 2026-03-07 20:09
 
 using UdonSharp;
 using UnityEngine;
@@ -11,10 +11,10 @@ using VRC.SDKBase;
 namespace SaccFlightAndVehicles
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
-    public class SAV_LateJoinSyncBridge : UdonSharpBehaviour
+    public class SLMH_LateJoinSyncBridge : UdonSharpBehaviour
     {
         [Header("Refs")]
-        public SAV_SlotManager_SingleDebug Manager;
+        public SLMH_SlotManager_SingleDebug Manager;
 
         [Header("Debug")]
         public bool EnableDebugLogs = true;
@@ -37,7 +37,6 @@ namespace SaccFlightAndVehicles
         [UdonSynced] public int s13_active = -1;
         [UdonSynced] public int s14_active = -1;
         [UdonSynced] public int s15_active = -1;
-
         private int _lastAppliedEpoch = int.MinValue;
         private bool _awaitingSnapshot = false;
         private int _retryCount = 0;
@@ -214,3 +213,5 @@ namespace SaccFlightAndVehicles
         }
     }
 }
+
+

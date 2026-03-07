@@ -1,8 +1,8 @@
-﻿// SAV_VehicleSlot_SingleDebug.cs
+﻿// SLMH_VehicleSlot_SingleDebug.cs
 // コードの最終目的: 単一機種SlotのFull/LowPoly切替と解除判定、遅延Respawnを適用する
-// バージョン名: ver09
-// バージョン差分: ver08実装へロールバックし、連番を最新へ正規化
-// バージョン更新日: 2026-03-07 16:48
+// バージョン名: ver10
+// バージョン差分: 接頭語をSAV_からSLMH_へ統一
+// バージョン更新日: 2026-03-07 20:09
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -11,7 +11,7 @@ using VRC.Udon.Common.Interfaces;
 namespace SaccFlightAndVehicles
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
-    public class SAV_VehicleSlot_SingleDebug : UdonSharpBehaviour
+    public class SLMH_VehicleSlot_SingleDebug : UdonSharpBehaviour
     {
         [Header("Identity")]
         [Range(0, 15)] public int SlotId = 0;
@@ -158,3 +158,5 @@ namespace SaccFlightAndVehicles
         }
     }
 }
+
+
