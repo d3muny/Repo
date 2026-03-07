@@ -1,8 +1,8 @@
 ﻿// SAV_SlotManager_SingleDebug.cs
 // コードの最終目的: Slot状態の同期管理を一元化し、Full/LowPoly切替とAll Respawnを制御する
-// バージョン名: ver16
-// バージョン差分: LateJoin再同期は「インスタンスマスターがオーナー取得して返す」経路に一本化
-// バージョン更新日: 2026-03-07 16:57
+// バージョン名: ver17
+// バージョン差分: LateJoin再同期要求をリトライ化（joiner側再要求＋master側再送）
+// バージョン更新日: 2026-03-07 17:05
 
 using UdonSharp;
 using UnityEngine;
@@ -18,6 +18,8 @@ namespace SaccFlightAndVehicles
         private bool _pendingToggle = false;
         private int _pendingRetryCount = 0;
         private bool _lateJoinResyncRequested = false;
+        private bool _awaitingLateJoinResync = false;
+        private int _lateJoinRetryCount = 0;
 
         [Header("Debug")]
         public bool EnableDebugLogs = true;
@@ -109,6 +111,7 @@ namespace SaccFlightAndVehicles
             bool forceByEpoch = (syncEpoch != _lastAppliedEpoch);
             _lastAppliedEpoch = syncEpoch;
             ApplyAll(forceByEpoch);
+            _awaitingLateJoinResync = false;
             DLog("OnDeserialization fromPlayerId=" + lastWriteByPlayerId + " slot=" + lastWriteSlot + " active=" + lastWriteActive + " seq=" + lastWriteSeq + " tick=" + lastWriteTick + " epoch=" + syncEpoch + " forceByEpoch=" + forceByEpoch);
             if (lastWriteSlot >= 0 && lastWriteSlot <= 15)
             {
@@ -202,7 +205,29 @@ namespace SaccFlightAndVehicles
             if (Networking.IsOwner(gameObject)) { return; }
 
             DLog("RequestLateJoinResyncFromMaster send");
+            _awaitingLateJoinResync = true;
+            _lateJoinRetryCount = 0;
             SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.All, nameof(NetLateJoinResyncRequest));
+            SendCustomEventDelayedSeconds(nameof(_RetryLateJoinResyncRequest), 1.6f);
+        }
+
+        public void _RetryLateJoinResyncRequest()
+        {
+            if (!_awaitingLateJoinResync) { return; }
+            if (!Utilities.IsValid(Networking.LocalPlayer)) { return; }
+            if (Networking.IsOwner(gameObject)) { return; }
+
+            _lateJoinRetryCount++;
+            if (_lateJoinRetryCount > 6)
+            {
+                DLog("LateJoinResync retry exhausted");
+                _awaitingLateJoinResync = false;
+                return;
+            }
+
+            DLog("LateJoinResync retry send count=" + _lateJoinRetryCount);
+            SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.All, nameof(NetLateJoinResyncRequest));
+            SendCustomEventDelayedSeconds(nameof(_RetryLateJoinResyncRequest), 1.6f);
         }
 
         // Runs on everyone. Only Instance Master responds.
@@ -243,6 +268,23 @@ namespace SaccFlightAndVehicles
             RequestSerialization();
             ApplyAll(true);
             DLog("LateJoinResyncDelayed epoch=" + syncEpoch + " writer=" + lastWriteByPlayerId);
+            SendCustomEventDelayedSeconds(nameof(_OwnerLateJoinResyncSecondPass), 1.0f);
+        }
+
+        public void _OwnerLateJoinResyncSecondPass()
+        {
+            if (!Networking.IsOwner(gameObject)) { return; }
+
+            syncEpoch++;
+            lastWriteSlot = -1;
+            lastWriteByPlayerId = Utilities.IsValid(Networking.LocalPlayer) ? Networking.LocalPlayer.playerId : -1;
+            lastWriteActive = -4;
+            lastWriteSeq = -1;
+            lastWriteTick = writeCounter;
+
+            RequestSerialization();
+            ApplyAll(true);
+            DLog("LateJoinResyncSecondPass epoch=" + syncEpoch + " writer=" + lastWriteByPlayerId);
         }
 
         public void _OwnerReserializeSnapshot()
