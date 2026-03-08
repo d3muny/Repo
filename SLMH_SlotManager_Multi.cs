@@ -1,8 +1,8 @@
 // SLMH_SlotManager_Multi.cs
 // Final goal: Provide multi-aircraft runtime child scaffold.
-// Version: ver02
-// Change: Switch to composition model with ManagerBase reference.
-// Updated: 2026-03-08 12:12
+// Version: ver03
+// Change: Add Base forward target method Runtime_AllRespawn().
+// Updated: 2026-03-08 12:18
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -89,6 +89,11 @@ namespace SaccFlightAndVehicles
         public void Runtime_OnLocalInput_CyclePreview(int slotId, int dir)
         {
             Log("Runtime_OnLocalInput_CyclePreview (scaffold) slot=" + slotId + " dir=" + dir);
+        }
+
+        public void Runtime_AllRespawn()
+        {
+            Log("Runtime_AllRespawn (scaffold)");
         }
 
         public void Runtime_OnOwnerLateJoinResyncDelayed() { }

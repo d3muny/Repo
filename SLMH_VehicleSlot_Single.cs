@@ -1,8 +1,8 @@
 ﻿// SLMH_VehicleSlot_Single.cs
 // コードの最終目的: 単一機種SlotのFull/LW機切替と解除判定、遅延Respawnを適用する
-// バージョン名: ver13
-// バージョン差分: クラス名からDebugを除去しSingle命名へ統一
-// バージョン更新日: 2026-03-07 23:46
+// バージョン名: ver14
+// バージョン差分: Inspectorフィールド順と名称を指定仕様に調整（FullRoot/LightWeightRoot等）
+// バージョン更新日: 2026-03-08 12:18
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -13,11 +13,17 @@ namespace SaccFlightAndVehicles
     [UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
     public class SLMH_VehicleSlot_Single : SLMH_VehicleSlot_Base
     {
-        [Header("Single aircraft references (index 0)")]
-        public GameObject FullRoot_0;
-        public GameObject LowPolyRoot_0;
-        public SaccEntitySendEvent Respawner_0;
-        public SLMH_AnimSyncBridge AnimSyncBridge_0;
+        [Header("Release Zone")]
+        [Tooltip("If assigned, OFF is blocked unless active vehicle center is inside this collider bounds.")]
+        public Collider ReleaseZone;
+
+        [Header("Aircraft References")]
+        public GameObject FullRoot;
+        [Tooltip("Pilot seat (SaccVehicleSeat). If assigned, OFF is blocked while occupied.")]
+        public SaccVehicleSeat PrimarySeat;
+        public SLMH_AnimSyncBridge AnimSyncBridge;
+        public GameObject LightWeightRoot;
+        public SaccEntitySendEvent Respawner;
 
         [Header("Respawn timing")]
         [Range(0, 300)] public int RespawnDelayFrames = 30;
@@ -31,7 +37,7 @@ namespace SaccFlightAndVehicles
 
         public bool IsVisualActive()
         {
-            if (FullRoot_0 != null) { return FullRoot_0.activeSelf; }
+            if (FullRoot != null) { return FullRoot.activeSelf; }
             return _isActiveLocal;
         }
 
@@ -78,34 +84,36 @@ namespace SaccFlightAndVehicles
 
         private void SetFull(bool on)
         {
-            if (FullRoot_0 && FullRoot_0.activeSelf != on) { FullRoot_0.SetActive(on); }
-            if (Respawner_0 && Respawner_0.gameObject && Respawner_0.gameObject.activeSelf != on) { Respawner_0.gameObject.SetActive(on); }
+            if (FullRoot && FullRoot.activeSelf != on) { FullRoot.SetActive(on); }
+            if (Respawner && Respawner.gameObject && Respawner.gameObject.activeSelf != on) { Respawner.gameObject.SetActive(on); }
         }
 
         private void SetLowPoly(bool on)
         {
-            if (LowPolyRoot_0 && LowPolyRoot_0.activeSelf != on) { LowPolyRoot_0.SetActive(on); }
+            if (LightWeightRoot && LightWeightRoot.activeSelf != on) { LightWeightRoot.SetActive(on); }
         }
 
         public bool CanReleaseActive()
         {
             Vector3 p = transform.position;
-            if (FullRoot_0 != null) { p = FullRoot_0.transform.position; }
-            return CanReleaseByCommonRule(p, _isActiveLocal);
+            if (FullRoot != null) { p = FullRoot.transform.position; }
+            if (!_isActiveLocal) { return true; }
+            if (PrimarySeat != null && PrimarySeat.SeatOccupied) { return false; }
+            if (ReleaseZone != null && !ReleaseZone.bounds.Contains(p)) { return false; }
+            return true;
         }
 
         public void TriggerRespawnNow_All()
         {
-            if (Respawner_0 == null) { return; }
-            Respawner_0.SendCustomNetworkEvent(NetworkEventTarget.All, "NormalEvent");
+            if (Respawner == null) { return; }
+            Respawner.SendCustomNetworkEvent(NetworkEventTarget.All, "NormalEvent");
         }
 
         public void _RespawnDelayed_All()
         {
             if (!_isActiveLocal) { return; }
-            if (Respawner_0 == null) { return; }
-
-            Respawner_0.SendCustomNetworkEvent(NetworkEventTarget.All, "NormalEvent");
+            if (Respawner == null) { return; }
+            Respawner.SendCustomNetworkEvent(NetworkEventTarget.All, "NormalEvent");
         }
 
         public void NetSetActiveVisual()
@@ -128,15 +136,15 @@ namespace SaccFlightAndVehicles
 
         private void NotifyAnimBridgeStateChanged(bool active)
         {
-            if (AnimSyncBridge_0 == null) { return; }
+            if (AnimSyncBridge == null) { return; }
 
             if (!active)
             {
-                AnimSyncBridge_0.NotifySlotBecameInactive();
+                AnimSyncBridge.NotifySlotBecameInactive();
                 return;
             }
 
-            AnimSyncBridge_0.NotifyStateApplied();
+            AnimSyncBridge.NotifyStateApplied();
         }
 
     }

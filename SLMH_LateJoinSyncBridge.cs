@@ -1,8 +1,8 @@
 ﻿// SLMH_LateJoinSyncBridge.cs
 // コードの最終目的: LateJoin時の状態要求とスナップショット反映を安定化する
-// バージョン名: ver03
-// バージョン差分: Manager参照型をSingle命名へ追従
-// バージョン更新日: 2026-03-07 23:46
+// バージョン名: ver04
+// バージョン差分: Manager参照をSingleからBaseへ変更
+// バージョン更新日: 2026-03-08 12:18
 
 using UdonSharp;
 using UnityEngine;
@@ -14,7 +14,7 @@ namespace SaccFlightAndVehicles
     public class SLMH_LateJoinSyncBridge : UdonSharpBehaviour
     {
         [Header("Refs")]
-        public SLMH_SlotManager_Single Manager;
+        public SLMH_SlotManager_Base Manager;
 
         [Header("Debug")]
         public bool EnableDebugLogs = true;
@@ -116,22 +116,22 @@ namespace SaccFlightAndVehicles
         {
             if (Manager == null) { DLog("PushSnapshot skipped Manager=null"); return; }
 
-            s0_active = Manager.GetActiveForBridge(0);
-            s1_active = Manager.GetActiveForBridge(1);
-            s2_active = Manager.GetActiveForBridge(2);
-            s3_active = Manager.GetActiveForBridge(3);
-            s4_active = Manager.GetActiveForBridge(4);
-            s5_active = Manager.GetActiveForBridge(5);
-            s6_active = Manager.GetActiveForBridge(6);
-            s7_active = Manager.GetActiveForBridge(7);
-            s8_active = Manager.GetActiveForBridge(8);
-            s9_active = Manager.GetActiveForBridge(9);
-            s10_active = Manager.GetActiveForBridge(10);
-            s11_active = Manager.GetActiveForBridge(11);
-            s12_active = Manager.GetActiveForBridge(12);
-            s13_active = Manager.GetActiveForBridge(13);
-            s14_active = Manager.GetActiveForBridge(14);
-            s15_active = Manager.GetActiveForBridge(15);
+            s0_active = Manager.Base_GetActiveForBridge(0);
+            s1_active = Manager.Base_GetActiveForBridge(1);
+            s2_active = Manager.Base_GetActiveForBridge(2);
+            s3_active = Manager.Base_GetActiveForBridge(3);
+            s4_active = Manager.Base_GetActiveForBridge(4);
+            s5_active = Manager.Base_GetActiveForBridge(5);
+            s6_active = Manager.Base_GetActiveForBridge(6);
+            s7_active = Manager.Base_GetActiveForBridge(7);
+            s8_active = Manager.Base_GetActiveForBridge(8);
+            s9_active = Manager.Base_GetActiveForBridge(9);
+            s10_active = Manager.Base_GetActiveForBridge(10);
+            s11_active = Manager.Base_GetActiveForBridge(11);
+            s12_active = Manager.Base_GetActiveForBridge(12);
+            s13_active = Manager.Base_GetActiveForBridge(13);
+            s14_active = Manager.Base_GetActiveForBridge(14);
+            s15_active = Manager.Base_GetActiveForBridge(15);
 
             SnapshotEpoch++;
             SnapshotWriterPlayerId = Utilities.IsValid(Networking.LocalPlayer) ? Networking.LocalPlayer.playerId : -1;
@@ -152,22 +152,22 @@ namespace SaccFlightAndVehicles
         {
             if (Manager == null) { return; }
 
-            s0_active = Manager.GetActiveForBridge(0);
-            s1_active = Manager.GetActiveForBridge(1);
-            s2_active = Manager.GetActiveForBridge(2);
-            s3_active = Manager.GetActiveForBridge(3);
-            s4_active = Manager.GetActiveForBridge(4);
-            s5_active = Manager.GetActiveForBridge(5);
-            s6_active = Manager.GetActiveForBridge(6);
-            s7_active = Manager.GetActiveForBridge(7);
-            s8_active = Manager.GetActiveForBridge(8);
-            s9_active = Manager.GetActiveForBridge(9);
-            s10_active = Manager.GetActiveForBridge(10);
-            s11_active = Manager.GetActiveForBridge(11);
-            s12_active = Manager.GetActiveForBridge(12);
-            s13_active = Manager.GetActiveForBridge(13);
-            s14_active = Manager.GetActiveForBridge(14);
-            s15_active = Manager.GetActiveForBridge(15);
+            s0_active = Manager.Base_GetActiveForBridge(0);
+            s1_active = Manager.Base_GetActiveForBridge(1);
+            s2_active = Manager.Base_GetActiveForBridge(2);
+            s3_active = Manager.Base_GetActiveForBridge(3);
+            s4_active = Manager.Base_GetActiveForBridge(4);
+            s5_active = Manager.Base_GetActiveForBridge(5);
+            s6_active = Manager.Base_GetActiveForBridge(6);
+            s7_active = Manager.Base_GetActiveForBridge(7);
+            s8_active = Manager.Base_GetActiveForBridge(8);
+            s9_active = Manager.Base_GetActiveForBridge(9);
+            s10_active = Manager.Base_GetActiveForBridge(10);
+            s11_active = Manager.Base_GetActiveForBridge(11);
+            s12_active = Manager.Base_GetActiveForBridge(12);
+            s13_active = Manager.Base_GetActiveForBridge(13);
+            s14_active = Manager.Base_GetActiveForBridge(14);
+            s15_active = Manager.Base_GetActiveForBridge(15);
 
             SnapshotEpoch++;
             SnapshotWriterPlayerId = Utilities.IsValid(Networking.LocalPlayer) ? Networking.LocalPlayer.playerId : -1;
@@ -183,24 +183,24 @@ namespace SaccFlightAndVehicles
 
             if (Manager == null) { DLog("OnDeserialization skipped Manager=null"); return; }
 
-            Manager.SetActiveForBridge(0, s0_active);
-            Manager.SetActiveForBridge(1, s1_active);
-            Manager.SetActiveForBridge(2, s2_active);
-            Manager.SetActiveForBridge(3, s3_active);
-            Manager.SetActiveForBridge(4, s4_active);
-            Manager.SetActiveForBridge(5, s5_active);
-            Manager.SetActiveForBridge(6, s6_active);
-            Manager.SetActiveForBridge(7, s7_active);
-            Manager.SetActiveForBridge(8, s8_active);
-            Manager.SetActiveForBridge(9, s9_active);
-            Manager.SetActiveForBridge(10, s10_active);
-            Manager.SetActiveForBridge(11, s11_active);
-            Manager.SetActiveForBridge(12, s12_active);
-            Manager.SetActiveForBridge(13, s13_active);
-            Manager.SetActiveForBridge(14, s14_active);
-            Manager.SetActiveForBridge(15, s15_active);
+            Manager.Base_SetActiveForBridge(0, s0_active);
+            Manager.Base_SetActiveForBridge(1, s1_active);
+            Manager.Base_SetActiveForBridge(2, s2_active);
+            Manager.Base_SetActiveForBridge(3, s3_active);
+            Manager.Base_SetActiveForBridge(4, s4_active);
+            Manager.Base_SetActiveForBridge(5, s5_active);
+            Manager.Base_SetActiveForBridge(6, s6_active);
+            Manager.Base_SetActiveForBridge(7, s7_active);
+            Manager.Base_SetActiveForBridge(8, s8_active);
+            Manager.Base_SetActiveForBridge(9, s9_active);
+            Manager.Base_SetActiveForBridge(10, s10_active);
+            Manager.Base_SetActiveForBridge(11, s11_active);
+            Manager.Base_SetActiveForBridge(12, s12_active);
+            Manager.Base_SetActiveForBridge(13, s13_active);
+            Manager.Base_SetActiveForBridge(14, s14_active);
+            Manager.Base_SetActiveForBridge(15, s15_active);
 
-            Manager.ApplyAllFromLateJoinBridge(SnapshotEpoch, SnapshotWriterPlayerId);
+            Manager.Base_ApplyAllFromLateJoinBridge(SnapshotEpoch, SnapshotWriterPlayerId);
             DLog("OnDeserialization applied epoch=" + SnapshotEpoch + " writer=" + SnapshotWriterPlayerId);
         }
 

@@ -1,8 +1,8 @@
 // SLMH_SlotManager_Base.cs
 // Final goal: Provide shared SlotManager foundation (refs, logs, late-join control).
-// Version: ver07
-// Change: Switch to composition-friendly base (Single/Multi no longer require inheritance).
-// Updated: 2026-03-08 12:10
+// Version: ver08
+// Change: Add bridge/all-respawn forwarders and keep Base as only external manager reference.
+// Updated: 2026-03-08 12:18
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -55,10 +55,10 @@ namespace SaccFlightAndVehicles
             return null;
         }
 
-        public void Base_BindLateJoinBridge(SLMH_SlotManager_Single manager)
+        public void Base_BindLateJoinBridge()
         {
             if (LateJoinBridge == null) { return; }
-            LateJoinBridge.Manager = manager;
+            LateJoinBridge.Manager = this;
         }
 
         public bool Base_HasLateJoinBridge()
@@ -105,9 +105,43 @@ namespace SaccFlightAndVehicles
             }
         }
 
-        public void Base_StartLateJoinControl(SLMH_SlotManager_Single manager)
+        public int Base_GetActiveForBridge(int slotId)
         {
-            Base_BindLateJoinBridge(manager);
+            if (SingleRuntime != null) { return SingleRuntime.GetActiveForBridge(slotId); }
+            return -1;
+        }
+
+        public void Base_SetActiveForBridge(int slotId, int value)
+        {
+            if (SingleRuntime != null) { SingleRuntime.SetActiveForBridge(slotId, value); }
+        }
+
+        public void Base_ApplyAllFromLateJoinBridge(int bridgeEpoch, int bridgeWriterId)
+        {
+            if (SingleRuntime != null)
+            {
+                SingleRuntime.ApplyAllFromLateJoinBridge(bridgeEpoch, bridgeWriterId);
+                return;
+            }
+            ApplyAllFromLateJoinBridge(bridgeEpoch, bridgeWriterId);
+        }
+
+        public void Base_AllRespawn()
+        {
+            if (SingleRuntime != null)
+            {
+                SingleRuntime.AllRespawn();
+                return;
+            }
+            if (MultiRuntime != null)
+            {
+                MultiRuntime.Runtime_AllRespawn();
+            }
+        }
+
+        public void Base_StartLateJoinControl()
+        {
+            Base_BindLateJoinBridge();
 
             if (!Base_HasLateJoinBridge() && !_lateJoinResyncRequested)
             {

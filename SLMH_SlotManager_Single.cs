@@ -92,7 +92,7 @@ namespace SaccFlightAndVehicles
             _lastAppliedEpoch = syncEpoch;
             ApplyAll(true);
             DLog("Start ApplyAll(force=true)");
-            if (ManagerBase != null) { ManagerBase.Base_StartLateJoinControl(this); }
+            if (ManagerBase != null) { ManagerBase.Base_StartLateJoinControl(); }
         }
 
         // ---- RuntimeChild API (called from Base) ----
