@@ -1,8 +1,8 @@
 ﻿// SLMH_SlotManager_Base.cs
 // Final goal: Provide shared SlotManager foundation (refs, logs, common helpers).
-// Version: ver04
-// Change: Route Slot/LateJoin refs through ControllerRoot (Single does not directly reference bridge).
-// Updated: 2026-03-08 10:53
+// Version: ver05
+// Change: Revert to Base-centered refs (Slots + LateJoinBridge) and keep Single as runtime child logic.
+// Updated: 2026-03-08 11:02
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -19,19 +19,25 @@ namespace SaccFlightAndVehicles
         [Header("Debug")]
         public bool EnableDebugLogs = true;
 
-        [Header("Controller Root")]
-        public SLMH_ControllerRoot ControllerRoot;
+        [Header("Slots")]
+        public SLMH_VehicleSlot_Single[] Slots;
+
+        [Header("LateJoin Bridge (child Udon)")]
+        public SLMH_LateJoinSyncBridge LateJoinBridge;
+
+        [Header("Runtime child (optional)")]
+        public SLMH_SlotManager_Single SingleRuntime;
 
         protected int GetSlotCount()
         {
-            if (ControllerRoot == null) { return 0; }
-            return ControllerRoot.GetSlotCount();
+            return (Slots != null) ? Slots.Length : 0;
         }
 
         protected SLMH_VehicleSlot_Single GetSlotAt(int index)
         {
-            if (ControllerRoot == null) { return null; }
-            return ControllerRoot.GetSlotAt(index);
+            if (Slots == null) { return null; }
+            if (index < 0 || index >= Slots.Length) { return null; }
+            return Slots[index];
         }
 
         protected SLMH_VehicleSlot_Single GetSlotById(int slotId)
@@ -50,14 +56,13 @@ namespace SaccFlightAndVehicles
 
         protected void BindLateJoinBridge(SLMH_SlotManager_Single manager)
         {
-            if (ControllerRoot == null) { return; }
-            ControllerRoot.BindLateJoinBridge(manager);
+            if (LateJoinBridge == null) { return; }
+            LateJoinBridge.Manager = manager;
         }
 
         protected bool HasLateJoinBridge()
         {
-            if (ControllerRoot == null) { return false; }
-            return ControllerRoot.HasLateJoinBridge();
+            return LateJoinBridge != null;
         }
 
         protected void StartLateJoinControl(SLMH_SlotManager_Single manager)
