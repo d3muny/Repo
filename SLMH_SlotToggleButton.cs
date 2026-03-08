@@ -1,8 +1,8 @@
 ﻿// SLMH_SlotToggleButton.cs
 // コードの最終目的: 指定SlotのActiveトグル操作をManagerへ中継する
-// バージョン名: ver03
-// バージョン差分: クラス名からDebugを除去し用途名へ変更
-// バージョン更新日: 2026-03-07 23:46
+// バージョン名: ver02-01
+// バージョン差分: ver02-01基準化（安定スナップショット）
+// バージョン更新日: 2026-03-08 13:26
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -23,6 +23,7 @@ namespace SaccFlightAndVehicles
         }
     }
 }
+
 
 
 

@@ -1,8 +1,8 @@
 ﻿// SLMH_VehicleSlot_Single.cs
 // コードの最終目的: 単一機種SlotのFull/LW機切替と解除判定、遅延Respawnを適用する
-// バージョン名: ver14
-// バージョン差分: Inspectorフィールド順と名称を指定仕様に調整（FullRoot/LightWeightRoot等）
-// バージョン更新日: 2026-03-08 12:18
+// バージョン名: ver02-01
+// バージョン差分: ver02-01基準化（安定スナップショット）
+// バージョン更新日: 2026-03-08 13:26
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -149,5 +149,6 @@ namespace SaccFlightAndVehicles
 
     }
 }
+
 
 

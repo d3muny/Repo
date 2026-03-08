@@ -1,8 +1,8 @@
-// SLMH_SlotManager_Base.cs
+﻿// SLMH_SlotManager_Base.cs
 // Final goal: Provide shared SlotManager foundation (refs, logs, late-join control).
-// Version: ver08
-// Change: Add bridge/all-respawn forwarders and keep Base as only external manager reference.
-// Updated: 2026-03-08 12:18
+// Version: ver02-01
+// Change: Baseline unified to ver02-01 (stable snapshot).
+// Updated: 2026-03-08 13:26
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -292,3 +292,4 @@ namespace SaccFlightAndVehicles
         }
     }
 }
+

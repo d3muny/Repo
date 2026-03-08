@@ -1,8 +1,8 @@
-// SLMH_SlotManager_Multi.cs
+﻿// SLMH_SlotManager_Multi.cs
 // Final goal: Provide multi-aircraft runtime child scaffold.
-// Version: ver03
-// Change: Add Base forward target method Runtime_AllRespawn().
-// Updated: 2026-03-08 12:18
+// Version: ver02-01
+// Change: Baseline unified to ver02-01 (stable snapshot).
+// Updated: 2026-03-08 13:26
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -111,3 +111,4 @@ namespace SaccFlightAndVehicles
         }
     }
 }
+

@@ -129,4 +129,31 @@
   - （任意）`SLMH_SlotManager_Single` を `SingleRuntime` として参照
 - `SLMH_SlotManager_Single` は Baseの参照を利用し、独自にBridge参照を持たない。
 
+## 17. ver02-01 実装到達点（安定スナップショット）
+- Base中心の参照構造へ移行（Single/MultiはRuntimeChild）。
+- LateJoin同期は `SLMH_LateJoinSyncBridge` + Base中継で動作。
+- Single運用での Full/LW 切替、AllRespawn、AnimSyncBridge 連携を確認。
+- `SLMH_AllRespawnButton` / `SLMH_LateJoinSyncBridge` のManager参照をBaseへ統一。
+- `SLMH_SlotManager_Single` / `SLMH_LateJoinSyncBridge` のInspector表示を最小化（主要参照のみ）。
+- `SLMH_VehicleSlot_Single` のInspector項目を運用順へ再配置。
+
+### ver02-01 統一前の各コード版
+- `SLMH_AllRespawnButton.cs`: `ver04`
+- `SLMH_AnimSyncBridge.cs`: `ver02`
+- `SLMH_LateJoinSyncBridge.cs`: `ver05`
+- `SLMH_SlotManager_Base.cs`: `ver08`
+- `SLMH_SlotManager_Multi.cs`: `ver03`
+- `SLMH_SlotManager_Single.cs`: `ver26`
+- `SLMH_SlotToggleButton.cs`: `ver03`
+- `SLMH_VehicleSlot_Base.cs`: `ver02`
+- `SLMH_VehicleSlot_Single.cs`: `ver14`
+
+## 18. 実装予定機能（次段）
+- Slot自動生成ツール（複製、軸/オフセット指定、再配置）。
+- 自動生成時の参照自動更新（`Manager.Slots[]`、各ボタン `SlotId`）。
+- `SLMH_DefaultAssignments` による初期割当テーブル管理。
+- Status TMPメッセージ強化（解除不可理由の明示ルール）。
+- Multi本実装（16 Slot x 16機種、非選択機体は完全非表示）。
+- Single本実装（最大32 Slot運用）とMultiとの差分固定。
+
 

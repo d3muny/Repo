@@ -1,8 +1,8 @@
 ﻿// SLMH_VehicleSlot_Base.cs
 // Final goal: Provide shared VehicleSlot foundation (common checks and logs).
-// Version: ver02
-// Change: Keep only common identity/debug; release checks move to child for field order control.
-// Updated: 2026-03-08 12:18
+// Version: ver02-01
+// Change: Baseline unified to ver02-01 (stable snapshot).
+// Updated: 2026-03-08 13:26
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -25,4 +25,5 @@ namespace SaccFlightAndVehicles
         }
     }
 }
+
 

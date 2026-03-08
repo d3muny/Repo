@@ -1,8 +1,8 @@
 ﻿// SLMH_SlotManager_Single.cs
 // コードの最終目的: Slot状態の同期管理を一元化し、Full/LowPoly切替とAll Respawnを制御する
-// バージョン名: ver26
-// バージョン差分: Base継承を廃止し、ManagerBase参照の構成へ変更
-// バージョン更新日: 2026-03-08 12:10
+// バージョン名: ver02-01
+// バージョン差分: ver02-01基準化（安定スナップショット）
+// バージョン更新日: 2026-03-08 13:26
 
 using UdonSharp;
 using UnityEngine;
@@ -594,6 +594,7 @@ namespace SaccFlightAndVehicles
         }
     }
 }
+
 
 
 
