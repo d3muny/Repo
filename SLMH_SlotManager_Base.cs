@@ -80,7 +80,7 @@ namespace SaccFlightAndVehicles
 
             if (Networking.IsOwner(gameObject))
             {
-                SendCustomEventDelayedSeconds(nameof(_Base_OwnerLateJoinResyncDelayed), 1f);
+                SendCustomEventDelayedSeconds("_Base_OwnerLateJoinResyncDelayed", 1f);
             }
         }
 
@@ -99,7 +99,7 @@ namespace SaccFlightAndVehicles
             _awaitingLateJoinResync = true;
             _lateJoinRetryCount = 0;
             SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.All, nameof(NetLateJoinResyncRequest));
-            SendCustomEventDelayedSeconds(nameof(_Base_RetryLateJoinResyncRequest), 1.6f);
+            SendCustomEventDelayedSeconds("_Base_RetryLateJoinResyncRequest", 1.6f);
         }
 
         public void _Base_RetryLateJoinResyncRequest()
@@ -118,7 +118,7 @@ namespace SaccFlightAndVehicles
 
             DLog("LateJoinResync retry send count=" + _lateJoinRetryCount);
             SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.All, nameof(NetLateJoinResyncRequest));
-            SendCustomEventDelayedSeconds(nameof(_Base_RetryLateJoinResyncRequest), 1.6f);
+            SendCustomEventDelayedSeconds("_Base_RetryLateJoinResyncRequest", 1.6f);
         }
 
         public void NetLateJoinResyncRequest()
@@ -130,24 +130,24 @@ namespace SaccFlightAndVehicles
             if (!Networking.IsOwner(gameObject))
             {
                 Networking.SetOwner(Networking.LocalPlayer, gameObject);
-                SendCustomEventDelayedFrames(nameof(_Base_MasterLateJoinResyncAfterOwner), 2);
+                SendCustomEventDelayedFrames("_Base_MasterLateJoinResyncAfterOwner", 2);
                 return;
             }
 
-            SendCustomEvent(nameof(_Base_OwnerLateJoinResyncDelayed));
+            SendCustomEvent("_Base_OwnerLateJoinResyncDelayed");
         }
 
         public void _Base_MasterLateJoinResyncAfterOwner()
         {
             if (!Networking.IsMaster) { return; }
             if (!Networking.IsOwner(gameObject)) { return; }
-            SendCustomEvent(nameof(_Base_OwnerLateJoinResyncDelayed));
+            SendCustomEvent("_Base_OwnerLateJoinResyncDelayed");
         }
 
         public void ApplyAllFromLateJoinBridge(int bridgeEpoch, int bridgeWriterId)
         {
             _awaitingLateJoinResync = false;
-            SendCustomEvent(nameof(_Base_ApplyAllAfterLateJoinBridge));
+            SendCustomEvent("_Base_ApplyAllAfterLateJoinBridge");
             DLog("LateJoinBridgeApply epoch=" + bridgeEpoch + " writer=" + bridgeWriterId);
         }
 
