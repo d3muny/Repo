@@ -121,4 +121,11 @@
   - `SH-1`: 機体名（任意入力）
 - ただし、内部ロジック上の正は `SlotId` とし、オブジェクト名は運用上の可読性用途とする。
 
+## 16. 参照構造（ControllerRoot）
+- `SLMH_SlotManager_Single` は `SLMH_ControllerRoot` を参照する。
+- `SLMH_ControllerRoot` が保持する参照:
+  - `Slots[]`
+  - `SLMH_LateJoinSyncBridge`
+- `SLMH_SlotManager_Single` は `SLMH_LateJoinSyncBridge` を直接参照しない。
+
 
