@@ -23,66 +23,66 @@ namespace SaccFlightAndVehicles
 
         // ---- Synced state (per slot, fixed max = 16) ----
         // active: -1 = inactive (LowPoly), 0 = active (Full)
-        [UdonSynced] public int s0_active = -1;
-        [UdonSynced] public int s1_active = -1;
-        [UdonSynced] public int s2_active = -1;
-        [UdonSynced] public int s3_active = -1;
-        [UdonSynced] public int s4_active = -1;
-        [UdonSynced] public int s5_active = -1;
-        [UdonSynced] public int s6_active = -1;
-        [UdonSynced] public int s7_active = -1;
-        [UdonSynced] public int s8_active = -1;
-        [UdonSynced] public int s9_active = -1;
-        [UdonSynced] public int s10_active = -1;
-        [UdonSynced] public int s11_active = -1;
-        [UdonSynced] public int s12_active = -1;
-        [UdonSynced] public int s13_active = -1;
-        [UdonSynced] public int s14_active = -1;
-        [UdonSynced] public int s15_active = -1;
+        [HideInInspector, UdonSynced] public int s0_active = -1;
+        [HideInInspector, UdonSynced] public int s1_active = -1;
+        [HideInInspector, UdonSynced] public int s2_active = -1;
+        [HideInInspector, UdonSynced] public int s3_active = -1;
+        [HideInInspector, UdonSynced] public int s4_active = -1;
+        [HideInInspector, UdonSynced] public int s5_active = -1;
+        [HideInInspector, UdonSynced] public int s6_active = -1;
+        [HideInInspector, UdonSynced] public int s7_active = -1;
+        [HideInInspector, UdonSynced] public int s8_active = -1;
+        [HideInInspector, UdonSynced] public int s9_active = -1;
+        [HideInInspector, UdonSynced] public int s10_active = -1;
+        [HideInInspector, UdonSynced] public int s11_active = -1;
+        [HideInInspector, UdonSynced] public int s12_active = -1;
+        [HideInInspector, UdonSynced] public int s13_active = -1;
+        [HideInInspector, UdonSynced] public int s14_active = -1;
+        [HideInInspector, UdonSynced] public int s15_active = -1;
 
         // seq increments whenever state changes
-        [UdonSynced] public int s0_seq = 0;
-        [UdonSynced] public int s1_seq = 0;
-        [UdonSynced] public int s2_seq = 0;
-        [UdonSynced] public int s3_seq = 0;
-        [UdonSynced] public int s4_seq = 0;
-        [UdonSynced] public int s5_seq = 0;
-        [UdonSynced] public int s6_seq = 0;
-        [UdonSynced] public int s7_seq = 0;
-        [UdonSynced] public int s8_seq = 0;
-        [UdonSynced] public int s9_seq = 0;
-        [UdonSynced] public int s10_seq = 0;
-        [UdonSynced] public int s11_seq = 0;
-        [UdonSynced] public int s12_seq = 0;
-        [UdonSynced] public int s13_seq = 0;
-        [UdonSynced] public int s14_seq = 0;
-        [UdonSynced] public int s15_seq = 0;
+        [HideInInspector, UdonSynced] public int s0_seq = 0;
+        [HideInInspector, UdonSynced] public int s1_seq = 0;
+        [HideInInspector, UdonSynced] public int s2_seq = 0;
+        [HideInInspector, UdonSynced] public int s3_seq = 0;
+        [HideInInspector, UdonSynced] public int s4_seq = 0;
+        [HideInInspector, UdonSynced] public int s5_seq = 0;
+        [HideInInspector, UdonSynced] public int s6_seq = 0;
+        [HideInInspector, UdonSynced] public int s7_seq = 0;
+        [HideInInspector, UdonSynced] public int s8_seq = 0;
+        [HideInInspector, UdonSynced] public int s9_seq = 0;
+        [HideInInspector, UdonSynced] public int s10_seq = 0;
+        [HideInInspector, UdonSynced] public int s11_seq = 0;
+        [HideInInspector, UdonSynced] public int s12_seq = 0;
+        [HideInInspector, UdonSynced] public int s13_seq = 0;
+        [HideInInspector, UdonSynced] public int s14_seq = 0;
+        [HideInInspector, UdonSynced] public int s15_seq = 0;
 
         // tick is a global monotonic write id (prevents stale overwrite)
-        [UdonSynced] public int s0_tick = 0;
-        [UdonSynced] public int s1_tick = 0;
-        [UdonSynced] public int s2_tick = 0;
-        [UdonSynced] public int s3_tick = 0;
-        [UdonSynced] public int s4_tick = 0;
-        [UdonSynced] public int s5_tick = 0;
-        [UdonSynced] public int s6_tick = 0;
-        [UdonSynced] public int s7_tick = 0;
-        [UdonSynced] public int s8_tick = 0;
-        [UdonSynced] public int s9_tick = 0;
-        [UdonSynced] public int s10_tick = 0;
-        [UdonSynced] public int s11_tick = 0;
-        [UdonSynced] public int s12_tick = 0;
-        [UdonSynced] public int s13_tick = 0;
-        [UdonSynced] public int s14_tick = 0;
-        [UdonSynced] public int s15_tick = 0;
+        [HideInInspector, UdonSynced] public int s0_tick = 0;
+        [HideInInspector, UdonSynced] public int s1_tick = 0;
+        [HideInInspector, UdonSynced] public int s2_tick = 0;
+        [HideInInspector, UdonSynced] public int s3_tick = 0;
+        [HideInInspector, UdonSynced] public int s4_tick = 0;
+        [HideInInspector, UdonSynced] public int s5_tick = 0;
+        [HideInInspector, UdonSynced] public int s6_tick = 0;
+        [HideInInspector, UdonSynced] public int s7_tick = 0;
+        [HideInInspector, UdonSynced] public int s8_tick = 0;
+        [HideInInspector, UdonSynced] public int s9_tick = 0;
+        [HideInInspector, UdonSynced] public int s10_tick = 0;
+        [HideInInspector, UdonSynced] public int s11_tick = 0;
+        [HideInInspector, UdonSynced] public int s12_tick = 0;
+        [HideInInspector, UdonSynced] public int s13_tick = 0;
+        [HideInInspector, UdonSynced] public int s14_tick = 0;
+        [HideInInspector, UdonSynced] public int s15_tick = 0;
 
-        [UdonSynced] public int writeCounter = 0;
-        [UdonSynced] public int lastWriteSlot = -1;
-        [UdonSynced] public int lastWriteByPlayerId = -1;
-        [UdonSynced] public int lastWriteActive = -1;
-        [UdonSynced] public int lastWriteSeq = 0;
-        [UdonSynced] public int lastWriteTick = 0;
-        [UdonSynced] public int syncEpoch = 0;
+        [HideInInspector, UdonSynced] public int writeCounter = 0;
+        [HideInInspector, UdonSynced] public int lastWriteSlot = -1;
+        [HideInInspector, UdonSynced] public int lastWriteByPlayerId = -1;
+        [HideInInspector, UdonSynced] public int lastWriteActive = -1;
+        [HideInInspector, UdonSynced] public int lastWriteSeq = 0;
+        [HideInInspector, UdonSynced] public int lastWriteTick = 0;
+        [HideInInspector, UdonSynced] public int syncEpoch = 0;
 
         private int _lastAppliedEpoch = int.MinValue;
 
@@ -594,6 +594,7 @@ namespace SaccFlightAndVehicles
         }
     }
 }
+
 
 
 
