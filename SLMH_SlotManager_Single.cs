@@ -1,8 +1,8 @@
 ﻿// SLMH_SlotManager_Single.cs
 // コードの最終目的: Slot状態の同期管理を一元化し、Full/LowPoly切替とAll Respawnを制御する
-// バージョン名: ver22
-// バージョン差分: クラス名からDebugを除去しSingle命名へ統一
-// バージョン更新日: 2026-03-07 23:46
+// バージョン名: ver23
+// バージョン差分: Slot/LateJoin参照の共通責務をBase経由に整理
+// バージョン更新日: 2026-03-08 10:24
 
 using UdonSharp;
 using UnityEngine;
@@ -92,10 +92,7 @@ namespace SaccFlightAndVehicles
             ApplyAll(true);
             DLog("Start ApplyAll(force=true)");
 
-            if (LateJoinBridge != null)
-            {
-                LateJoinBridge.Manager = this;
-            }
+            BindLateJoinBridge(this);
 
             // Late join helper: request a resync from Instance Master once.
             if (LateJoinBridge == null && !_lateJoinResyncRequested)
@@ -349,10 +346,10 @@ namespace SaccFlightAndVehicles
 
         private void CaptureActiveStateFromVisuals()
         {
-            int count = (Slots != null) ? Slots.Length : 0;
+            int count = GetSlotCount();
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_Single slot = Slots[i];
+                SLMH_VehicleSlot_Single slot = GetSlotAt(i);
                 if (!slot) { continue; }
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
@@ -366,10 +363,10 @@ namespace SaccFlightAndVehicles
         {
             CaptureActiveStateFromVisuals();
 
-            int count = (Slots != null) ? Slots.Length : 0;
+            int count = GetSlotCount();
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_Single slot = Slots[i];
+                SLMH_VehicleSlot_Single slot = GetSlotAt(i);
                 if (!slot) { continue; }
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
@@ -409,10 +406,10 @@ namespace SaccFlightAndVehicles
 
         public void AllRespawn()
         {
-            int count = (Slots != null) ? Slots.Length : 0;
+            int count = GetSlotCount();
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_Single slot = Slots[i];
+                SLMH_VehicleSlot_Single slot = GetSlotAt(i);
                 if (!slot) { continue; }
 
                 if (slot.SlotId < 0 || slot.SlotId > 15) { continue; }
@@ -427,11 +424,11 @@ namespace SaccFlightAndVehicles
 
         private void ApplyAll(bool force)
         {
-            int count = (Slots != null) ? Slots.Length : 0;
+            int count = GetSlotCount();
             bool localIsOwner = Networking.IsOwner(gameObject);
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_Single slot = Slots[i];
+                SLMH_VehicleSlot_Single slot = GetSlotAt(i);
                 if (!slot) { continue; }
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
