@@ -1,8 +1,8 @@
 ﻿// SLMH_LateJoinSyncBridge.cs
 // コードの最終目的: LateJoin時の状態要求とスナップショット反映を安定化する
-// バージョン名: ver04
-// バージョン差分: Manager参照をSingleからBaseへ変更
-// バージョン更新日: 2026-03-08 12:18
+// バージョン名: ver05
+// バージョン差分: Inspector表示を最小化（Manager以外は非表示）
+// バージョン更新日: 2026-03-08 13:15
 
 using UdonSharp;
 using UnityEngine;
@@ -16,27 +16,27 @@ namespace SaccFlightAndVehicles
         [Header("Refs")]
         public SLMH_SlotManager_Base Manager;
 
-        [Header("Debug")]
+        [HideInInspector]
         public bool EnableDebugLogs = true;
 
-        [UdonSynced] public int SnapshotEpoch = 0;
-        [UdonSynced] public int SnapshotWriterPlayerId = -1;
-        [UdonSynced] public int s0_active = -1;
-        [UdonSynced] public int s1_active = -1;
-        [UdonSynced] public int s2_active = -1;
-        [UdonSynced] public int s3_active = -1;
-        [UdonSynced] public int s4_active = -1;
-        [UdonSynced] public int s5_active = -1;
-        [UdonSynced] public int s6_active = -1;
-        [UdonSynced] public int s7_active = -1;
-        [UdonSynced] public int s8_active = -1;
-        [UdonSynced] public int s9_active = -1;
-        [UdonSynced] public int s10_active = -1;
-        [UdonSynced] public int s11_active = -1;
-        [UdonSynced] public int s12_active = -1;
-        [UdonSynced] public int s13_active = -1;
-        [UdonSynced] public int s14_active = -1;
-        [UdonSynced] public int s15_active = -1;
+        [HideInInspector, UdonSynced] public int SnapshotEpoch = 0;
+        [HideInInspector, UdonSynced] public int SnapshotWriterPlayerId = -1;
+        [HideInInspector, UdonSynced] public int s0_active = -1;
+        [HideInInspector, UdonSynced] public int s1_active = -1;
+        [HideInInspector, UdonSynced] public int s2_active = -1;
+        [HideInInspector, UdonSynced] public int s3_active = -1;
+        [HideInInspector, UdonSynced] public int s4_active = -1;
+        [HideInInspector, UdonSynced] public int s5_active = -1;
+        [HideInInspector, UdonSynced] public int s6_active = -1;
+        [HideInInspector, UdonSynced] public int s7_active = -1;
+        [HideInInspector, UdonSynced] public int s8_active = -1;
+        [HideInInspector, UdonSynced] public int s9_active = -1;
+        [HideInInspector, UdonSynced] public int s10_active = -1;
+        [HideInInspector, UdonSynced] public int s11_active = -1;
+        [HideInInspector, UdonSynced] public int s12_active = -1;
+        [HideInInspector, UdonSynced] public int s13_active = -1;
+        [HideInInspector, UdonSynced] public int s14_active = -1;
+        [HideInInspector, UdonSynced] public int s15_active = -1;
         private int _lastAppliedEpoch = int.MinValue;
         private bool _awaitingSnapshot = false;
         private int _retryCount = 0;
