@@ -290,8 +290,8 @@ namespace SaccFlightAndVehicles
             int count = GetSlotCount();
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_Single slot = GetSlotAt(i) as SLMH_VehicleSlot_Single;
-                if (!slot) { continue; }
+                SLMH_VehicleSlot_Single slot = GetSlotAtSingle(i);
+                if (slot == null) { continue; }
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
 
@@ -307,8 +307,8 @@ namespace SaccFlightAndVehicles
             int count = GetSlotCount();
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_Single slot = GetSlotAt(i) as SLMH_VehicleSlot_Single;
-                if (!slot) { continue; }
+                SLMH_VehicleSlot_Single slot = GetSlotAtSingle(i);
+                if (slot == null) { continue; }
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
 
@@ -331,7 +331,7 @@ namespace SaccFlightAndVehicles
         private void BroadcastVisualState(int slotId, int next)
         {
             SLMH_VehicleSlot_Single slot = GetSlot(slotId);
-            if (!slot) { return; }
+            if (slot == null) { return; }
 
             if (next == 0)
             {
@@ -350,8 +350,8 @@ namespace SaccFlightAndVehicles
             int count = GetSlotCount();
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_Single slot = GetSlotAt(i) as SLMH_VehicleSlot_Single;
-                if (!slot) { continue; }
+                SLMH_VehicleSlot_Single slot = GetSlotAtSingle(i);
+                if (slot == null) { continue; }
 
                 if (slot.SlotId < 0 || slot.SlotId > 15) { continue; }
                 if (slot.IsVisualActive())
@@ -369,8 +369,8 @@ namespace SaccFlightAndVehicles
             bool localIsOwner = Networking.IsOwner(gameObject);
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_Single slot = GetSlotAt(i) as SLMH_VehicleSlot_Single;
-                if (!slot) { continue; }
+                SLMH_VehicleSlot_Single slot = GetSlotAtSingle(i);
+                if (slot == null) { continue; }
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
 
@@ -387,7 +387,21 @@ namespace SaccFlightAndVehicles
 
         private SLMH_VehicleSlot_Single GetSlot(int slotId)
         {
-            return GetSlotById(slotId) as SLMH_VehicleSlot_Single;
+            return GetSlotByIdSingle(slotId);
+        }
+
+        private SLMH_VehicleSlot_Single GetSlotAtSingle(int index)
+        {
+            SLMH_VehicleSlot_Base baseSlot = GetSlotAt(index);
+            if (baseSlot == null) { return null; }
+            return (SLMH_VehicleSlot_Single)baseSlot;
+        }
+
+        private SLMH_VehicleSlot_Single GetSlotByIdSingle(int slotId)
+        {
+            SLMH_VehicleSlot_Base baseSlot = GetSlotById(slotId);
+            if (baseSlot == null) { return null; }
+            return (SLMH_VehicleSlot_Single)baseSlot;
         }
 
         private int GetActive(int slotId)
