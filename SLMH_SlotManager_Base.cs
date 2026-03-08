@@ -1,8 +1,8 @@
 ﻿// SLMH_SlotManager_Base.cs
 // Final goal: Provide shared SlotManager foundation (refs, logs, common helpers).
-// Version: ver05
-// Change: Revert to Base-centered refs (Slots + LateJoinBridge) and keep Single as runtime child logic.
-// Updated: 2026-03-08 11:02
+// Version: ver06
+// Change: Add RuntimeChild dispatch (Single/Multi) while keeping LateJoin bridge compatibility.
+// Updated: 2026-03-08 12:00
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -20,32 +20,33 @@ namespace SaccFlightAndVehicles
         public bool EnableDebugLogs = true;
 
         [Header("Slots")]
-        public SLMH_VehicleSlot_Single[] Slots;
+        public SLMH_VehicleSlot_Base[] Slots;
 
         [Header("LateJoin Bridge (child Udon)")]
         public SLMH_LateJoinSyncBridge LateJoinBridge;
 
         [Header("Runtime child (optional)")]
         public SLMH_SlotManager_Single SingleRuntime;
+        public SLMH_SlotManager_Multi MultiRuntime;
 
         protected int GetSlotCount()
         {
             return (Slots != null) ? Slots.Length : 0;
         }
 
-        protected SLMH_VehicleSlot_Single GetSlotAt(int index)
+        protected SLMH_VehicleSlot_Base GetSlotAt(int index)
         {
             if (Slots == null) { return null; }
             if (index < 0 || index >= Slots.Length) { return null; }
             return Slots[index];
         }
 
-        protected SLMH_VehicleSlot_Single GetSlotById(int slotId)
+        protected SLMH_VehicleSlot_Base GetSlotById(int slotId)
         {
             int count = GetSlotCount();
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_Single slot = GetSlotAt(i);
+                SLMH_VehicleSlot_Base slot = GetSlotAt(i);
                 if (slot != null && slot.SlotId == slotId)
                 {
                     return slot;
@@ -63,6 +64,45 @@ namespace SaccFlightAndVehicles
         protected bool HasLateJoinBridge()
         {
             return LateJoinBridge != null;
+        }
+
+        public void Base_RuntimeApplyAllFromSyncedState()
+        {
+            if (SingleRuntime != null)
+            {
+                SingleRuntime.Runtime_ApplyAllFromSyncedState();
+                return;
+            }
+            if (MultiRuntime != null)
+            {
+                MultiRuntime.Runtime_ApplyAllFromSyncedState();
+            }
+        }
+
+        public void Base_RuntimeToggleActive(int slotId)
+        {
+            if (SingleRuntime != null)
+            {
+                SingleRuntime.Runtime_OnLocalInput_ToggleActive(slotId);
+                return;
+            }
+            if (MultiRuntime != null)
+            {
+                MultiRuntime.Runtime_OnLocalInput_ToggleActive(slotId);
+            }
+        }
+
+        public void Base_RuntimeCyclePreview(int slotId, int dir)
+        {
+            if (SingleRuntime != null)
+            {
+                SingleRuntime.Runtime_OnLocalInput_CyclePreview(slotId, dir);
+                return;
+            }
+            if (MultiRuntime != null)
+            {
+                MultiRuntime.Runtime_OnLocalInput_CyclePreview(slotId, dir);
+            }
         }
 
         protected void StartLateJoinControl(SLMH_SlotManager_Single manager)

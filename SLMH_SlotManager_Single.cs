@@ -1,8 +1,8 @@
 ﻿// SLMH_SlotManager_Single.cs
 // コードの最終目的: Slot状態の同期管理を一元化し、Full/LowPoly切替とAll Respawnを制御する
-// バージョン名: ver24
-// バージョン差分: LateJoin制御をBase主導へ移管（Singleは状態処理に集中）
-// バージョン更新日: 2026-03-08 10:39
+// バージョン名: ver25
+// バージョン差分: RuntimeChild APIを追加し、Base共通Slots型に追従
+// バージョン更新日: 2026-03-08 12:00
 
 using UdonSharp;
 using UnityEngine;
@@ -85,10 +85,27 @@ namespace SaccFlightAndVehicles
 
         private void Start()
         {
+            if (SingleRuntime == null) { SingleRuntime = this; }
             _lastAppliedEpoch = syncEpoch;
             ApplyAll(true);
             DLog("Start ApplyAll(force=true)");
             StartLateJoinControl(this);
+        }
+
+        // ---- RuntimeChild API (called from Base) ----
+        public void Runtime_ApplyAllFromSyncedState()
+        {
+            ApplyAll(true);
+        }
+
+        public void Runtime_OnLocalInput_ToggleActive(int slotId)
+        {
+            RequestToggleActive(slotId);
+        }
+
+        public void Runtime_OnLocalInput_CyclePreview(int slotId, int dir)
+        {
+            DLog("Runtime_OnLocalInput_CyclePreview ignored in Single slot=" + slotId + " dir=" + dir);
         }
 
         public override void OnDeserialization()
@@ -273,7 +290,7 @@ namespace SaccFlightAndVehicles
             int count = GetSlotCount();
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_Single slot = GetSlotAt(i);
+                SLMH_VehicleSlot_Single slot = GetSlotAt(i) as SLMH_VehicleSlot_Single;
                 if (!slot) { continue; }
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
@@ -290,7 +307,7 @@ namespace SaccFlightAndVehicles
             int count = GetSlotCount();
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_Single slot = GetSlotAt(i);
+                SLMH_VehicleSlot_Single slot = GetSlotAt(i) as SLMH_VehicleSlot_Single;
                 if (!slot) { continue; }
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
@@ -333,7 +350,7 @@ namespace SaccFlightAndVehicles
             int count = GetSlotCount();
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_Single slot = GetSlotAt(i);
+                SLMH_VehicleSlot_Single slot = GetSlotAt(i) as SLMH_VehicleSlot_Single;
                 if (!slot) { continue; }
 
                 if (slot.SlotId < 0 || slot.SlotId > 15) { continue; }
@@ -352,7 +369,7 @@ namespace SaccFlightAndVehicles
             bool localIsOwner = Networking.IsOwner(gameObject);
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_Single slot = GetSlotAt(i);
+                SLMH_VehicleSlot_Single slot = GetSlotAt(i) as SLMH_VehicleSlot_Single;
                 if (!slot) { continue; }
                 int id = slot.SlotId;
                 if (id < 0 || id > 15) { continue; }
@@ -370,7 +387,7 @@ namespace SaccFlightAndVehicles
 
         private SLMH_VehicleSlot_Single GetSlot(int slotId)
         {
-            return GetSlotById(slotId);
+            return GetSlotById(slotId) as SLMH_VehicleSlot_Single;
         }
 
         private int GetActive(int slotId)
