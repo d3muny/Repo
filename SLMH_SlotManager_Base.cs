@@ -1,8 +1,8 @@
-﻿// SLMH_SlotManager_Base.cs
-// Final goal: Provide shared SlotManager foundation (refs, logs, common helpers).
-// Version: ver06
-// Change: Add RuntimeChild dispatch (Single/Multi) while keeping LateJoin bridge compatibility.
-// Updated: 2026-03-08 12:00
+// SLMH_SlotManager_Base.cs
+// Final goal: Provide shared SlotManager foundation (refs, logs, late-join control).
+// Version: ver07
+// Change: Switch to composition-friendly base (Single/Multi no longer require inheritance).
+// Updated: 2026-03-08 12:10
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
@@ -12,9 +12,9 @@ namespace SaccFlightAndVehicles
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
     public class SLMH_SlotManager_Base : UdonSharpBehaviour
     {
-        protected bool _lateJoinResyncRequested = false;
-        protected bool _awaitingLateJoinResync = false;
-        protected int _lateJoinRetryCount = 0;
+        private bool _lateJoinResyncRequested = false;
+        private bool _awaitingLateJoinResync = false;
+        private int _lateJoinRetryCount = 0;
 
         [Header("Debug")]
         public bool EnableDebugLogs = true;
@@ -29,24 +29,24 @@ namespace SaccFlightAndVehicles
         public SLMH_SlotManager_Single SingleRuntime;
         public SLMH_SlotManager_Multi MultiRuntime;
 
-        protected int GetSlotCount()
+        public int Base_GetSlotCount()
         {
             return (Slots != null) ? Slots.Length : 0;
         }
 
-        protected SLMH_VehicleSlot_Base GetSlotAt(int index)
+        public SLMH_VehicleSlot_Base Base_GetSlotAt(int index)
         {
             if (Slots == null) { return null; }
             if (index < 0 || index >= Slots.Length) { return null; }
             return Slots[index];
         }
 
-        protected SLMH_VehicleSlot_Base GetSlotById(int slotId)
+        public SLMH_VehicleSlot_Base Base_GetSlotById(int slotId)
         {
-            int count = GetSlotCount();
+            int count = Base_GetSlotCount();
             for (int i = 0; i < count; i++)
             {
-                SLMH_VehicleSlot_Base slot = GetSlotAt(i);
+                SLMH_VehicleSlot_Base slot = Base_GetSlotAt(i);
                 if (slot != null && slot.SlotId == slotId)
                 {
                     return slot;
@@ -55,13 +55,13 @@ namespace SaccFlightAndVehicles
             return null;
         }
 
-        protected void BindLateJoinBridge(SLMH_SlotManager_Single manager)
+        public void Base_BindLateJoinBridge(SLMH_SlotManager_Single manager)
         {
             if (LateJoinBridge == null) { return; }
             LateJoinBridge.Manager = manager;
         }
 
-        protected bool HasLateJoinBridge()
+        public bool Base_HasLateJoinBridge()
         {
             return LateJoinBridge != null;
         }
@@ -105,26 +105,26 @@ namespace SaccFlightAndVehicles
             }
         }
 
-        protected void StartLateJoinControl(SLMH_SlotManager_Single manager)
+        public void Base_StartLateJoinControl(SLMH_SlotManager_Single manager)
         {
-            BindLateJoinBridge(manager);
+            Base_BindLateJoinBridge(manager);
 
-            if (!HasLateJoinBridge() && !_lateJoinResyncRequested)
+            if (!Base_HasLateJoinBridge() && !_lateJoinResyncRequested)
             {
                 _lateJoinResyncRequested = true;
                 SendCustomEventDelayedSeconds(nameof(_Base_RequestLateJoinResyncFromMaster), 1.2f);
             }
         }
 
-        protected void ResetAwaitingLateJoinOnDeserialization()
+        public void Base_ResetAwaitingLateJoinOnDeserialization()
         {
             _awaitingLateJoinResync = false;
         }
 
-        protected void HandlePlayerJoinedLateJoin(VRCPlayerApi player)
+        public void Base_HandlePlayerJoinedLateJoin(VRCPlayerApi player)
         {
-            DLog("OnPlayerJoined player=" + player.playerId + ":" + SafeName(player) + " localIsOwner=" + Networking.IsOwner(gameObject));
-            if (HasLateJoinBridge()) { return; }
+            Base_DLog("OnPlayerJoined player=" + player.playerId + ":" + Base_SafeName(player) + " localIsOwner=" + Networking.IsOwner(gameObject));
+            if (Base_HasLateJoinBridge()) { return; }
 
             if (Networking.IsOwner(gameObject))
             {
@@ -132,18 +132,18 @@ namespace SaccFlightAndVehicles
             }
         }
 
-        protected void HandlePlayerLeftLateJoin(VRCPlayerApi player)
+        public void Base_HandlePlayerLeftLateJoin(VRCPlayerApi player)
         {
-            DLog("OnPlayerLeft player=" + player.playerId + ":" + SafeName(player));
+            Base_DLog("OnPlayerLeft player=" + player.playerId + ":" + Base_SafeName(player));
         }
 
         public void _Base_RequestLateJoinResyncFromMaster()
         {
             if (!Utilities.IsValid(Networking.LocalPlayer)) { return; }
             if (Networking.IsOwner(gameObject)) { return; }
-            if (HasLateJoinBridge()) { return; }
+            if (Base_HasLateJoinBridge()) { return; }
 
-            DLog("RequestLateJoinResyncFromMaster send");
+            Base_DLog("RequestLateJoinResyncFromMaster send");
             _awaitingLateJoinResync = true;
             _lateJoinRetryCount = 0;
             SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.All, nameof(NetLateJoinResyncRequest));
@@ -159,12 +159,12 @@ namespace SaccFlightAndVehicles
             _lateJoinRetryCount++;
             if (_lateJoinRetryCount > 3)
             {
-                DLog("LateJoinResync retry exhausted");
+                Base_DLog("LateJoinResync retry exhausted");
                 _awaitingLateJoinResync = false;
                 return;
             }
 
-            DLog("LateJoinResync retry send count=" + _lateJoinRetryCount);
+            Base_DLog("LateJoinResync retry send count=" + _lateJoinRetryCount);
             SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.All, nameof(NetLateJoinResyncRequest));
             SendCustomEventDelayedSeconds("_Base_RetryLateJoinResyncRequest", 1.6f);
         }
@@ -173,7 +173,7 @@ namespace SaccFlightAndVehicles
         {
             if (!Networking.IsMaster) { return; }
 
-            DLog("NetLateJoinResyncRequest received by Instance Master");
+            Base_DLog("NetLateJoinResyncRequest received by Instance Master");
 
             if (!Networking.IsOwner(gameObject))
             {
@@ -192,26 +192,69 @@ namespace SaccFlightAndVehicles
             SendCustomEvent("_Base_OwnerLateJoinResyncDelayed");
         }
 
+        public void _Base_OwnerLateJoinResyncDelayed()
+        {
+            if (SingleRuntime != null)
+            {
+                SingleRuntime.Runtime_OnOwnerLateJoinResyncDelayed();
+                return;
+            }
+            if (MultiRuntime != null)
+            {
+                MultiRuntime.Runtime_OnOwnerLateJoinResyncDelayed();
+            }
+        }
+
+        public void _Base_OwnerLateJoinResyncSecondPass()
+        {
+            if (SingleRuntime != null)
+            {
+                SingleRuntime.Runtime_OnOwnerLateJoinResyncSecondPass();
+                return;
+            }
+            if (MultiRuntime != null)
+            {
+                MultiRuntime.Runtime_OnOwnerLateJoinResyncSecondPass();
+            }
+        }
+
+        public void _Base_OwnerReserializeSnapshot()
+        {
+            if (SingleRuntime != null)
+            {
+                SingleRuntime.Runtime_OnOwnerReserializeSnapshot();
+                return;
+            }
+            if (MultiRuntime != null)
+            {
+                MultiRuntime.Runtime_OnOwnerReserializeSnapshot();
+            }
+        }
+
         public void ApplyAllFromLateJoinBridge(int bridgeEpoch, int bridgeWriterId)
         {
             _awaitingLateJoinResync = false;
             SendCustomEvent("_Base_ApplyAllAfterLateJoinBridge");
-            DLog("LateJoinBridgeApply epoch=" + bridgeEpoch + " writer=" + bridgeWriterId);
+            Base_DLog("LateJoinBridgeApply epoch=" + bridgeEpoch + " writer=" + bridgeWriterId);
         }
 
-        protected string SafeName(VRCPlayerApi p)
+        public void _Base_ApplyAllAfterLateJoinBridge()
+        {
+            Base_RuntimeApplyAllFromSyncedState();
+        }
+
+        public string Base_SafeName(VRCPlayerApi p)
         {
             return (p != null) ? p.displayName : "null";
         }
 
-        protected void DLog(string msg)
+        public void Base_DLog(string msg)
         {
             if (!EnableDebugLogs) { return; }
             VRCPlayerApi owner = Networking.GetOwner(gameObject);
             int localId = Utilities.IsValid(Networking.LocalPlayer) ? Networking.LocalPlayer.playerId : -1;
-            string ownerName = SafeName(owner);
+            string ownerName = Base_SafeName(owner);
             Debug.Log("[SlotMgr] L=" + localId + " Owner=" + ownerName + " | " + msg);
         }
     }
 }
-

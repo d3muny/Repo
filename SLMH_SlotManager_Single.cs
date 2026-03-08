@@ -1,8 +1,8 @@
 ﻿// SLMH_SlotManager_Single.cs
 // コードの最終目的: Slot状態の同期管理を一元化し、Full/LowPoly切替とAll Respawnを制御する
-// バージョン名: ver25
-// バージョン差分: RuntimeChild APIを追加し、Base共通Slots型に追従
-// バージョン更新日: 2026-03-08 12:00
+// バージョン名: ver26
+// バージョン差分: Base継承を廃止し、ManagerBase参照の構成へ変更
+// バージョン更新日: 2026-03-08 12:10
 
 using UdonSharp;
 using UnityEngine;
@@ -11,8 +11,11 @@ using VRC.SDKBase;
 namespace SaccFlightAndVehicles
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Manual)]
-    public class SLMH_SlotManager_Single : SLMH_SlotManager_Base
+    public class SLMH_SlotManager_Single : UdonSharpBehaviour
     {
+        [Header("Base")]
+        public SLMH_SlotManager_Base ManagerBase;
+
         private int _pendingSlotId = -1;
         private int _pendingNext = -1;
         private bool _pendingToggle = false;
@@ -85,11 +88,11 @@ namespace SaccFlightAndVehicles
 
         private void Start()
         {
-            if (SingleRuntime == null) { SingleRuntime = this; }
+            if (ManagerBase != null && ManagerBase.SingleRuntime == null) { ManagerBase.SingleRuntime = this; }
             _lastAppliedEpoch = syncEpoch;
             ApplyAll(true);
             DLog("Start ApplyAll(force=true)");
-            StartLateJoinControl(this);
+            if (ManagerBase != null) { ManagerBase.Base_StartLateJoinControl(this); }
         }
 
         // ---- RuntimeChild API (called from Base) ----
@@ -113,7 +116,7 @@ namespace SaccFlightAndVehicles
             bool forceByEpoch = (syncEpoch != _lastAppliedEpoch);
             _lastAppliedEpoch = syncEpoch;
             ApplyAll(forceByEpoch);
-            ResetAwaitingLateJoinOnDeserialization();
+            if (ManagerBase != null) { ManagerBase.Base_ResetAwaitingLateJoinOnDeserialization(); }
             DLog("OnDeserialization fromPlayerId=" + lastWriteByPlayerId + " slot=" + lastWriteSlot + " active=" + lastWriteActive + " seq=" + lastWriteSeq + " tick=" + lastWriteTick + " epoch=" + syncEpoch + " forceByEpoch=" + forceByEpoch);
             if (lastWriteSlot >= 0 && lastWriteSlot <= 15)
             {
@@ -176,7 +179,7 @@ namespace SaccFlightAndVehicles
             DLog("OnOwnershipTransferred newOwner=" + SafeName(newOwner) + " localIsOwner=" + Networking.IsOwner(gameObject));
             if (Networking.IsOwner(gameObject))
             {
-                SendCustomEventDelayedFrames(nameof(_Base_OwnerReserializeSnapshot), 2);
+                SendCustomEventDelayedFrames(nameof(Runtime_OnOwnerReserializeSnapshot), 2);
             }
             if (_pendingToggle && Networking.IsOwner(gameObject))
             {
@@ -187,12 +190,12 @@ namespace SaccFlightAndVehicles
 
         public override void OnPlayerJoined(VRCPlayerApi player)
         {
-            HandlePlayerJoinedLateJoin(player);
+            if (ManagerBase != null) { ManagerBase.Base_HandlePlayerJoinedLateJoin(player); }
         }
 
         public override void OnPlayerLeft(VRCPlayerApi player)
         {
-            HandlePlayerLeftLateJoin(player);
+            if (ManagerBase != null) { ManagerBase.Base_HandlePlayerLeftLateJoin(player); }
         }
 
         // ---- LateJoin child bridge helper API ----
@@ -206,17 +209,23 @@ namespace SaccFlightAndVehicles
             SetActive(slotId, value);
         }
 
-        public void _Base_OwnerLateJoinResyncDelayed()
+        public void ApplyAllFromLateJoinBridge(int bridgeEpoch, int bridgeWriterId)
+        {
+            ApplyAll(true);
+            DLog("ApplyAllFromLateJoinBridge epoch=" + bridgeEpoch + " writer=" + bridgeWriterId);
+        }
+
+        public void Runtime_OnOwnerLateJoinResyncDelayed()
         {
             if (!Networking.IsOwner(gameObject)) { return; }
 
             syncEpoch++;
             ReserializeSnapshotFromVisuals();
             DLog("LateJoinResyncDelayed epoch=" + syncEpoch + " writer=" + lastWriteByPlayerId);
-            SendCustomEventDelayedSeconds(nameof(_Base_OwnerLateJoinResyncSecondPass), 1.0f);
+            SendCustomEventDelayedSeconds(nameof(Runtime_OnOwnerLateJoinResyncSecondPass), 1.0f);
         }
 
-        public void _Base_OwnerLateJoinResyncSecondPass()
+        public void Runtime_OnOwnerLateJoinResyncSecondPass()
         {
             if (!Networking.IsOwner(gameObject)) { return; }
 
@@ -225,15 +234,10 @@ namespace SaccFlightAndVehicles
             DLog("LateJoinResyncSecondPass epoch=" + syncEpoch + " writer=" + lastWriteByPlayerId);
         }
 
-        public void _Base_OwnerReserializeSnapshot()
+        public void Runtime_OnOwnerReserializeSnapshot()
         {
             if (!Networking.IsOwner(gameObject)) { return; }
             ReserializeSnapshotFromVisuals();
-        }
-
-        public void _Base_ApplyAllAfterLateJoinBridge()
-        {
-            ApplyAll(true);
         }
 
         public void _TryApplyPendingToggle()
@@ -380,7 +384,7 @@ namespace SaccFlightAndVehicles
                     GetTick(id),
                     force,
                     localIsOwner,
-                    EnableDebugLogs
+                    IsDebugEnabled()
                 );
             }
         }
@@ -402,6 +406,45 @@ namespace SaccFlightAndVehicles
             SLMH_VehicleSlot_Base baseSlot = GetSlotById(slotId);
             if (baseSlot == null) { return null; }
             return (SLMH_VehicleSlot_Single)baseSlot;
+        }
+
+        private int GetSlotCount()
+        {
+            if (ManagerBase == null) { return 0; }
+            return ManagerBase.Base_GetSlotCount();
+        }
+
+        private SLMH_VehicleSlot_Base GetSlotAt(int index)
+        {
+            if (ManagerBase == null) { return null; }
+            return ManagerBase.Base_GetSlotAt(index);
+        }
+
+        private SLMH_VehicleSlot_Base GetSlotById(int slotId)
+        {
+            if (ManagerBase == null) { return null; }
+            return ManagerBase.Base_GetSlotById(slotId);
+        }
+
+        private bool IsDebugEnabled()
+        {
+            return (ManagerBase != null) && ManagerBase.EnableDebugLogs;
+        }
+
+        private string SafeName(VRCPlayerApi player)
+        {
+            if (ManagerBase != null) { return ManagerBase.Base_SafeName(player); }
+            return (player != null) ? player.displayName : "null";
+        }
+
+        private void DLog(string msg)
+        {
+            if (ManagerBase != null)
+            {
+                ManagerBase.Base_DLog(msg);
+                return;
+            }
+            Debug.Log("[SlotMgr:Single] " + msg);
         }
 
         private int GetActive(int slotId)
