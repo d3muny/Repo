@@ -1,8 +1,8 @@
 ﻿// SLMH_SlotManager_Single.cs
 // コードの最終目的: Slot状態の同期管理を一元化し、Full/LowPoly切替とAll Respawnを制御する
-// バージョン名: ver23
-// バージョン差分: Slot/LateJoin参照の共通責務をBase経由に整理
-// バージョン更新日: 2026-03-08 10:24
+// バージョン名: ver24
+// バージョン差分: LateJoin制御をBase主導へ移管（Singleは状態処理に集中）
+// バージョン更新日: 2026-03-08 10:39
 
 using UdonSharp;
 using UnityEngine;
@@ -17,9 +17,6 @@ namespace SaccFlightAndVehicles
         private int _pendingNext = -1;
         private bool _pendingToggle = false;
         private int _pendingRetryCount = 0;
-        private bool _lateJoinResyncRequested = false;
-        private bool _awaitingLateJoinResync = false;
-        private int _lateJoinRetryCount = 0;
 
         // ---- Synced state (per slot, fixed max = 16) ----
         // active: -1 = inactive (LowPoly), 0 = active (Full)
@@ -91,15 +88,7 @@ namespace SaccFlightAndVehicles
             _lastAppliedEpoch = syncEpoch;
             ApplyAll(true);
             DLog("Start ApplyAll(force=true)");
-
-            BindLateJoinBridge(this);
-
-            // Late join helper: request a resync from Instance Master once.
-            if (LateJoinBridge == null && !_lateJoinResyncRequested)
-            {
-                _lateJoinResyncRequested = true;
-                SendCustomEventDelayedSeconds(nameof(_RequestLateJoinResyncFromMaster), 1.2f);
-            }
+            StartLateJoinControl(this);
         }
 
         public override void OnDeserialization()
@@ -107,7 +96,7 @@ namespace SaccFlightAndVehicles
             bool forceByEpoch = (syncEpoch != _lastAppliedEpoch);
             _lastAppliedEpoch = syncEpoch;
             ApplyAll(forceByEpoch);
-            _awaitingLateJoinResync = false;
+            ResetAwaitingLateJoinOnDeserialization();
             DLog("OnDeserialization fromPlayerId=" + lastWriteByPlayerId + " slot=" + lastWriteSlot + " active=" + lastWriteActive + " seq=" + lastWriteSeq + " tick=" + lastWriteTick + " epoch=" + syncEpoch + " forceByEpoch=" + forceByEpoch);
             if (lastWriteSlot >= 0 && lastWriteSlot <= 15)
             {
@@ -170,7 +159,7 @@ namespace SaccFlightAndVehicles
             DLog("OnOwnershipTransferred newOwner=" + SafeName(newOwner) + " localIsOwner=" + Networking.IsOwner(gameObject));
             if (Networking.IsOwner(gameObject))
             {
-                SendCustomEventDelayedFrames(nameof(_OwnerReserializeSnapshot), 2);
+                SendCustomEventDelayedFrames(nameof(_Base_OwnerReserializeSnapshot), 2);
             }
             if (_pendingToggle && Networking.IsOwner(gameObject))
             {
@@ -181,32 +170,12 @@ namespace SaccFlightAndVehicles
 
         public override void OnPlayerJoined(VRCPlayerApi player)
         {
-            DLog("OnPlayerJoined player=" + player.playerId + ":" + SafeName(player) + " localIsOwner=" + Networking.IsOwner(gameObject));
-            if (LateJoinBridge != null) { return; }
-            if (Networking.IsOwner(gameObject))
-            {
-                // Late join path: send authoritative synced state after a short delay.
-                SendCustomEventDelayedSeconds(nameof(_OwnerLateJoinResyncDelayed), 1f);
-            }
+            HandlePlayerJoinedLateJoin(player);
         }
 
         public override void OnPlayerLeft(VRCPlayerApi player)
         {
-            DLog("OnPlayerLeft player=" + player.playerId + ":" + SafeName(player));
-        }
-
-        // Joiner-side request path: ask instance master to refresh synchronized state.
-        public void _RequestLateJoinResyncFromMaster()
-        {
-            if (!Utilities.IsValid(Networking.LocalPlayer)) { return; }
-            if (Networking.IsOwner(gameObject)) { return; }
-            if (LateJoinBridge != null) { return; }
-
-            DLog("RequestLateJoinResyncFromMaster send");
-            _awaitingLateJoinResync = true;
-            _lateJoinRetryCount = 0;
-            SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.All, nameof(NetLateJoinResyncRequest));
-            SendCustomEventDelayedSeconds(nameof(_RetryLateJoinResyncRequest), 1.6f);
+            HandlePlayerLeftLateJoin(player);
         }
 
         // ---- LateJoin child bridge helper API ----
@@ -220,67 +189,17 @@ namespace SaccFlightAndVehicles
             SetActive(slotId, value);
         }
 
-        public void ApplyAllFromLateJoinBridge(int bridgeEpoch, int bridgeWriterId)
-        {
-            _awaitingLateJoinResync = false;
-            ApplyAll(true);
-            DLog("LateJoinBridgeApply epoch=" + bridgeEpoch + " writer=" + bridgeWriterId);
-        }
-
-        public void _RetryLateJoinResyncRequest()
-        {
-            if (!_awaitingLateJoinResync) { return; }
-            if (!Utilities.IsValid(Networking.LocalPlayer)) { return; }
-            if (Networking.IsOwner(gameObject)) { return; }
-
-            _lateJoinRetryCount++;
-            if (_lateJoinRetryCount > 3)
-            {
-                DLog("LateJoinResync retry exhausted");
-                _awaitingLateJoinResync = false;
-                return;
-            }
-
-            DLog("LateJoinResync retry send count=" + _lateJoinRetryCount);
-            SendCustomNetworkEvent(VRC.Udon.Common.Interfaces.NetworkEventTarget.All, nameof(NetLateJoinResyncRequest));
-            SendCustomEventDelayedSeconds(nameof(_RetryLateJoinResyncRequest), 1.6f);
-        }
-
-        // Runs on everyone. Only Instance Master responds.
-        public void NetLateJoinResyncRequest()
-        {
-            if (!Networking.IsMaster) { return; }
-
-            DLog("NetLateJoinResyncRequest received by Instance Master");
-
-            if (!Networking.IsOwner(gameObject))
-            {
-                Networking.SetOwner(Networking.LocalPlayer, gameObject);
-                SendCustomEventDelayedFrames(nameof(_MasterLateJoinResyncAfterOwner), 2);
-                return;
-            }
-
-            _OwnerLateJoinResyncDelayed();
-        }
-
-        public void _MasterLateJoinResyncAfterOwner()
-        {
-            if (!Networking.IsMaster) { return; }
-            if (!Networking.IsOwner(gameObject)) { return; }
-            _OwnerLateJoinResyncDelayed();
-        }
-
-        public void _OwnerLateJoinResyncDelayed()
+        public void _Base_OwnerLateJoinResyncDelayed()
         {
             if (!Networking.IsOwner(gameObject)) { return; }
 
             syncEpoch++;
             ReserializeSnapshotFromVisuals();
             DLog("LateJoinResyncDelayed epoch=" + syncEpoch + " writer=" + lastWriteByPlayerId);
-            SendCustomEventDelayedSeconds(nameof(_OwnerLateJoinResyncSecondPass), 1.0f);
+            SendCustomEventDelayedSeconds(nameof(_Base_OwnerLateJoinResyncSecondPass), 1.0f);
         }
 
-        public void _OwnerLateJoinResyncSecondPass()
+        public void _Base_OwnerLateJoinResyncSecondPass()
         {
             if (!Networking.IsOwner(gameObject)) { return; }
 
@@ -289,10 +208,15 @@ namespace SaccFlightAndVehicles
             DLog("LateJoinResyncSecondPass epoch=" + syncEpoch + " writer=" + lastWriteByPlayerId);
         }
 
-        public void _OwnerReserializeSnapshot()
+        public void _Base_OwnerReserializeSnapshot()
         {
             if (!Networking.IsOwner(gameObject)) { return; }
             ReserializeSnapshotFromVisuals();
+        }
+
+        public void _Base_ApplyAllAfterLateJoinBridge()
+        {
+            ApplyAll(true);
         }
 
         public void _TryApplyPendingToggle()
